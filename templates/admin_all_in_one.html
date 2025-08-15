@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Media Database</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .nav a, .nav button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .nav a:hover, .nav button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .nav button.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #fff;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .media-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .media-poster {
+            width: 80px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .media-info {
+            flex: 1;
+        }
+        
+        .media-info h4 {
+            color: #fff;
+            margin-bottom: 5px;
+            font-size: 1.2rem;
+        }
+        
+        .media-info p {
+            color: #ccc;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .media-type {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .media-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .alert-error {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #fff;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        /* TV Series Episodes Section */
+        .episodes-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+        
+        .season-container {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .season-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .season-title {
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .episode-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .episode-number {
+            min-width: 100px;
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .episode-url {
+            flex: 1;
+        }
+        
+        .episode-url input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .add-season-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .nav {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .media-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .media-actions {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .episode-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .episode-number {
+                min-width: auto;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Admin Panel</h1>
+            <p style="margin-top: 10px; opacity: 0.9;">Complete Media Database Management</p>
+            <div class="nav">
+                <a href="/">Home</a>
+                <button onclick="showSection('add-movie')" id="btn-add-movie">Add Movie</button>
+                <button onclick="showSection('add-tv')" id="btn-add-tv">Add TV Series</button>
+                <button onclick="showSection('search-edit')" id="btn-search-edit">Search & Edit</button>
+                <a href="/media">Public API</a>
+                <a href="/api/docs">API Docs</a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div id="alert-container"></div>
+
+            <!-- Add Movie Section -->
+            <div id="add-movie" class="section active">
+                <h3 style="color: #fff; margin-bottom: 20px;">🎬 Add New Movie</h3>
+                
+                <form id="movie-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="movie-tmdb-id">TMDB Movie ID:</label>
+                            <input type="number" id="movie-tmdb-id" name="tmdb_id" required>
+                            <button type="button" id="fetch-movie-btn" class="btn" style="margin-top: 10px;">Fetch Details</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="movie-title">Title:</label>
+                            <input type="text" id="movie-title" name="title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="movie-description">Description:</label>
+                        <textarea id="movie-description" name="description" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="movie-poster-url">Poster URL:</label>
+                            <input type="url" id="movie-poster-url" name="poster_url">
+                        </div>
+                        <div class="form-group">
+                            <label for="movie-release-date">Release Date:</label>
+                            <input type="date" id="movie-release-date" name="release_date">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="movie-language">Language:</label>
+                            <input type="text" id="movie-language" name="language">
+                        </div>
+                        <div></div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="movie-video-720p">720p Video Link:</label>
+                            <input type="url" id="movie-video-720p" name="video_720p" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="movie-video-1080p">1080p Video Link:</label>
+                            <input type="url" id="movie-video-1080p" name="video_1080p" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Add Movie</button>
+                </form>
+            </div>
+
+            <!-- Add TV Series Section -->
+            <div id="add-tv" class="section">
+                <h3 style="color: #fff; margin-bottom: 20px;">📺 Add New TV Series</h3>
+                
+                <form id="tv-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tv-tmdb-id">TMDB TV Series ID:</label>
+                            <input type="number" id="tv-tmdb-id" name="tmdb_id" required>
+                            <button type="button" id="fetch-tv-btn" class="btn" style="margin-top: 10px;">Fetch Details</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="tv-title">Title:</label>
+                            <input type="text" id="tv-title" name="title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tv-description">Description:</label>
+                        <textarea id="tv-description" name="description" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tv-poster-url">Poster URL:</label>
+                            <input type="url" id="tv-poster-url" name="poster_url">
+                        </div>
+                        <div class="form-group">
+                            <label for="tv-release-date">Release Date:</label>
+                            <input type="date" id="tv-release-date" name="release_date">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tv-language">Language:</label>
+                        <input type="text" id="tv-language" name="language">
+                    </div>
+
+                    <!-- Episodes Section -->
+                    <div class="episodes-section">
+                        <h4 style="color: #fff; margin-bottom: 20px;">📺 Episodes</h4>
+                        <div id="seasons-container">
+                            <!-- Seasons will be added here dynamically -->
+                        </div>
+                        <button type="button" id="add-season-btn" class="btn add-season-btn">+ Add Season</button>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="margin-top: 20px;">Add TV Series with Episodes</button>
+                </form>
+            </div>
+
+            <!-- Search & Edit Section -->
+            <div id="search-edit" class="section">
+                <h3 style="color: #fff; margin-bottom: 20px;">🔍 Search & Edit Media</h3>
+                
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search by title, description, or language..." />
+                    <button id="search-btn" class="btn">Search</button>
+                    <button id="show-all-btn" class="btn">Show All</button>
+                </div>
+                
+                <div id="results-container">
+                    <p style="color: #ccc; text-align: center;">Use search above to find movies and TV series</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 style="color: #fff; margin-bottom: 20px;" id="modal-title">Edit Media</h3>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-type">
+                
+                <div class="form-group">
+                    <label for="edit-title">Title:</label>
+                    <input type="text" id="edit-title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-description">Description:</label>
+                    <textarea id="edit-description" name="description" rows="4"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-poster-url">Poster URL:</label>
+                    <input type="url" id="edit-poster-url" name="poster_url">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-release-date">Release Date:</label>
+                        <input type="date" id="edit-release-date" name="release_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-language">Language:</label>
+                        <input type="text" id="edit-language" name="language">
+                    </div>
+                </div>
+                
+                <div id="movie-fields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-video-720p">720p Video Link:</label>
+                            <input type="url" id="edit-video-720p" name="video_720p">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-video-1080p">1080p Video Link:</label>
+                            <input type="url" id="edit-video-1080p" name="video_1080p">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    let seasonCount = 0;
+
+    // Section switching
+    function showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // Remove active class from all nav buttons
+        document.querySelectorAll('.nav button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected section
+        document.getElementById(sectionId).classList.add('active');
+        document.getElementById('btn-' + sectionId.replace('-', '-')).classList.add('active');
+        
+        // Initialize TV section if needed
+        if (sectionId === 'add-tv' && seasonCount === 0) {
+            addSeason();
+        }
+        
+        // Load all media if search section
+        if (sectionId === 'search-edit') {
+            showAllMedia();
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('btn-add-movie').classList.add('active');
+    });
+
+    // Add Season Function
+    function addSeason() {
+        seasonCount++;
+        const seasonsContainer = document.getElementById('seasons-container');
+        
+        const seasonDiv = document.createElement('div');
+        seasonDiv.className = 'season-container';
+        seasonDiv.id = `season-${seasonCount}`;
+        
+        seasonDiv.innerHTML = `
+            <div class="season-header">
+                <h5 class="season-title">Season ${seasonCount}</h5>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeSeason(${seasonCount})">Remove Season</button>
+            </div>
+            <div id="episodes-${seasonCount}">
+                <div class="episode-item">
+                    <div class="episode-number">Episode 1:</div>
+                    <div class="episode-url">
+                        <input type="url" name="season_${seasonCount}_episode_1" placeholder="720p Video URL for Episode 1" required>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeEpisode(this)">Remove</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-success btn-small" onclick="addEpisode(${seasonCount})">+ Add Episode</button>
+        `;
+        
+        seasonsContainer.appendChild(seasonDiv);
+    }
+
+    // Remove Season Function
+    function removeSeason(seasonNumber) {
+        if (confirm('Are you sure you want to remove this entire season?')) {
+            document.getElementById(`season-${seasonNumber}`).remove();
+        }
+    }
+
+    // Add Episode Function
+    function addEpisode(seasonNumber) {
+        const episodesContainer = document.getElementById(`episodes-${seasonNumber}`);
+        const episodeCount = episodesContainer.children.length + 1;
+        
+        if (episodeCount > 1000) {
+            showAlert('Maximum 1000 episodes per season allowed', 'error');
+            return;
+        }
+        
+        const episodeDiv = document.createElement('div');
+        episodeDiv.className = 'episode-item';
+        
+        episodeDiv.innerHTML = `
+            <div class="episode-number">Episode ${episodeCount}:</div>
+            <div class="episode-url">
+                <input type="url" name="season_${seasonNumber}_episode_${episodeCount}" placeholder="720p Video URL for Episode ${episodeCount}" required>
+            </div>
+            <button type="button" class="btn btn-danger btn-small" onclick="removeEpisode(this)">Remove</button>
+        `;
+        
+        episodesContainer.appendChild(episodeDiv);
+    }
+
+    // Remove Episode Function
+    function removeEpisode(button) {
+        const episodeItem = button.parentElement;
+        const episodesContainer = episodeItem.parentElement;
+        
+        if (episodesContainer.children.length > 1) {
+            episodeItem.remove();
+            // Renumber episodes
+            renumberEpisodes(episodesContainer);
+        } else {
+            showAlert('At least one episode is required per season', 'error');
+        }
+    }
+
+    // Renumber Episodes Function
+    function renumberEpisodes(episodesContainer) {
+        const episodes = episodesContainer.children;
+        for (let i = 0; i < episodes.length; i++) {
+            const episodeNumber = episodes[i].querySelector('.episode-number');
+            const input = episodes[i].querySelector('input');
+            const seasonMatch = input.name.match(/season_(\d+)_episode_\d+/);
+            
+            if (seasonMatch) {
+                const seasonNumber = seasonMatch[1];
+                episodeNumber.textContent = `Episode ${i + 1}:`;
+                input.name = `season_${seasonNumber}_episode_${i + 1}`;
+                input.placeholder = `720p Video URL for Episode ${i + 1}`;
+            }
+        }
+    }
+
+    // Add Season Button Event
+    document.getElementById('add-season-btn').addEventListener('click', addSeason);
+
+    // Fetch movie details from TMDB
+    document.getElementById('fetch-movie-btn').addEventListener('click', async function() {
+        const tmdbId = document.getElementById('movie-tmdb-id').value;
+        if (!tmdbId) {
+            showAlert('Please enter a TMDB ID', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/tmdb/movie/${tmdbId}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('movie-title').value = data.title;
+                document.getElementById('movie-description').value = data.description;
+                document.getElementById('movie-poster-url').value = data.poster_url;
+                document.getElementById('movie-release-date').value = data.release_date;
+                document.getElementById('movie-language').value = data.language;
+                showAlert('Movie details fetched successfully!', 'success');
+            } else {
+                showAlert('Movie not found in TMDB', 'error');
+            }
+        } catch (error) {
+            showAlert('Error fetching movie details', 'error');
+        }
+    });
+
+    // Fetch TV details from TMDB
+    document.getElementById('fetch-tv-btn').addEventListener('click', async function() {
+        const tmdbId = document.getElementById('tv-tmdb-id').value;
+        if (!tmdbId) {
+            showAlert('Please enter a TMDB ID', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/tmdb/tv/${tmdbId}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('tv-title').value = data.title;
+                document.getElementById('tv-description').value = data.description;
+                document.getElementById('tv-poster-url').value = data.poster_url;
+                document.getElementById('tv-release-date').value = data.release_date;
+                document.getElementById('tv-language').value = data.language;
+                showAlert('TV series details fetched successfully!', 'success');
+            } else {
+                showAlert('TV series not found in TMDB', 'error');
+            }
+        } catch (error) {
+            showAlert('Error fetching TV series details', 'error');
+        }
+    });
+
+    // Add movie
+    document.getElementById('movie-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const movieData = Object.fromEntries(formData.entries());
+        
+        try {
+            const response = await fetch('/api/admin/movies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(movieData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showAlert('Movie added successfully!', 'success');
+                this.reset();
+            } else {
+                showAlert(result.error || 'Error adding movie', 'error');
+            }
+        } catch (error) {
+            showAlert('Error adding movie', 'error');
+        }
+    });
+
+    // Add TV series with episodes
+    document.getElementById('tv-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const tvData = {
+            tmdb_id: formData.get('tmdb_id'),
+            title: formData.get('title'),
+            description: formData.get('description'),
+            poster_url: formData.get('poster_url'),
+            release_date: formData.get('release_date'),
+            language: formData.get('language')
+        };
+        
+        // Collect episodes data
+        const episodes = {};
+        for (let [key, value] of formData.entries()) {
+            if (key.startsWith('season_') && key.includes('_episode_')) {
+                const match = key.match(/season_(\d+)_episode_(\d+)/);
+                if (match) {
+                    const seasonNum = parseInt(match[1]);
+                    const episodeNum = parseInt(match[2]);
+                    
+                    if (!episodes[seasonNum]) {
+                        episodes[seasonNum] = {};
+                    }
+                    episodes[seasonNum][episodeNum] = value;
+                }
+            }
+        }
+        
+        try {
+            // First add the TV series
+            const tvResponse = await fetch('/api/admin/tv-series', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(tvData)
+            });
+            
+            const tvResult = await tvResponse.json();
+            
+            if (tvResponse.ok) {
+                const tvSeriesId = tvResult.id;
+                
+                // Then add all episodes
+                for (const [seasonNum, seasonEpisodes] of Object.entries(episodes)) {
+                    for (const [episodeNum, videoUrl] of Object.entries(seasonEpisodes)) {
+                        if (videoUrl.trim()) {
+                            const episodeData = {
+                                season_number: parseInt(seasonNum),
+                                episode_number: parseInt(episodeNum),
+                                video_720p: videoUrl
+                            };
+                            
+                            await fetch(`/api/admin/tv-series/${tvSeriesId}/episodes`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(episodeData)
+                            });
+                        }
+                    }
+                }
+                
+                showAlert('TV series and episodes added successfully!', 'success');
+                this.reset();
+                // Reset seasons
+                document.getElementById('seasons-container').innerHTML = '';
+                seasonCount = 0;
+                addSeason();
+            } else {
+                showAlert(tvResult.error || 'Error adding TV series', 'error');
+            }
+        } catch (error) {
+            showAlert('Error adding TV series', 'error');
+        }
+    });
+
+    // Search functionality
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const showAllBtn = document.getElementById('show-all-btn');
+    const resultsContainer = document.getElementById('results-container');
+
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+
+    showAllBtn.addEventListener('click', showAllMedia);
+
+    async function performSearch() {
+        const query = searchInput.value.trim();
+        if (!query) {
+            showAlert('Please enter a search term', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            if (response.ok) {
+                const data = await response.json();
+                displayResults(data.results, `Search results for "${query}" (${data.total_results} found)`);
+            } else {
+                showAlert('Error performing search', 'error');
+            }
+        } catch (error) {
+            showAlert('Error performing search', 'error');
+        }
+    }
+
+    async function showAllMedia() {
+        try {
+            const response = await fetch('/media');
+            if (response.ok) {
+                const data = await response.json();
+                displayResults(data, `All Media (${data.length} items)`);
+            } else {
+                showAlert('Error loading media', 'error');
+            }
+        } catch (error) {
+            showAlert('Error loading media', 'error');
+        }
+    }
+
+    function displayResults(results, title) {
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">No results found</p>';
+            return;
+        }
+
+        let html = `<h4 style="color: #fff; margin-bottom: 20px;">${title}</h4>`;
+        
+        results.forEach(item => {
+            html += `
+                <div class="media-item">
+                    ${item.poster_url ? `<img src="${item.poster_url}" alt="${item.title}" class="media-poster">` : 
+                      `<div class="media-poster" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem;">${item.type === 'movie' ? '🎬' : '📺'}</div>`}
+                    <div class="media-info">
+                        <h4>${item.title}</h4>
+                        <span class="media-type">${item.type.toUpperCase()}</span>
+                        <p><strong>Release:</strong> ${item.release_date || 'N/A'}</p>
+                        <p><strong>Language:</strong> ${item.language || 'N/A'}</p>
+                        <p><strong>Description:</strong> ${item.description ? item.description.substring(0, 100) + '...' : 'No description'}</p>
+                        ${item.type === 'tv' ? `<p><strong>Seasons:</strong> ${item.total_seasons || 0}</p>` : ''}
+                    </div>
+                    <div class="media-actions">
+                        <button class="btn btn-warning btn-small edit-btn" data-id="${item.id}" data-type="${item.type}">Edit</button>
+                        <button class="btn btn-danger btn-small delete-btn" data-id="${item.id}" data-type="${item.type}">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        resultsContainer.innerHTML = html;
+    }
+
+    // Modal functionality
+    const modal = document.getElementById('editModal');
+    const closeBtn = document.querySelector('.close');
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('edit-btn')) {
+            const id = e.target.getAttribute('data-id');
+            const type = e.target.getAttribute('data-type');
+            openEditModal(id, type);
+        }
+        
+        if (e.target.classList.contains('delete-btn')) {
+            const id = e.target.getAttribute('data-id');
+            const type = e.target.getAttribute('data-type');
+            deleteMedia(id, type);
+        }
+    });
+
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    async function openEditModal(id, type) {
+        try {
+            const response = await fetch(`/media/${id}`);
+            if (response.ok) {
+                const media = await response.json();
+                
+                document.getElementById('edit-id').value = id;
+                document.getElementById('edit-type').value = type;
+                document.getElementById('edit-title').value = media.title;
+                document.getElementById('edit-description').value = media.description || '';
+                document.getElementById('edit-poster-url').value = media.poster_url || '';
+                document.getElementById('edit-release-date').value = media.release_date || '';
+                document.getElementById('edit-language').value = media.language || '';
+                
+                const movieFields = document.getElementById('movie-fields');
+                const modalTitle = document.getElementById('modal-title');
+                
+                if (type === 'movie') {
+                    movieFields.style.display = 'block';
+                    document.getElementById('edit-video-720p').value = media.video_links['720p'] || '';
+                    document.getElementById('edit-video-1080p').value = media.video_links['1080p'] || '';
+                    modalTitle.textContent = 'Edit Movie';
+                } else {
+                    movieFields.style.display = 'none';
+                    modalTitle.textContent = 'Edit TV Series';
+                }
+                
+                modal.style.display = 'block';
+            }
+        } catch (error) {
+            showAlert('Error loading media details', 'error');
+        }
+    }
+
+    // Update media
+    document.getElementById('edit-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('edit-id').value;
+        const type = document.getElementById('edit-type').value;
+        const formData = new FormData(this);
+        const mediaData = Object.fromEntries(formData.entries());
+        
+        const endpoint = type === 'movie' ? `/api/admin/movies/${id}` : `/api/admin/tv-series/${id}`;
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(mediaData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showAlert(`${type === 'movie' ? 'Movie' : 'TV Series'} updated successfully!`, 'success');
+                modal.style.display = 'none';
+                // Refresh current results
+                if (searchInput.value.trim()) {
+                    performSearch();
+                } else {
+                    showAllMedia();
+                }
+            } else {
+                showAlert(result.error || `Error updating ${type}`, 'error');
+            }
+        } catch (error) {
+            showAlert(`Error updating ${type}`, 'error');
+        }
+    });
+
+    // Delete media
+    async function deleteMedia(id, type) {
+        const mediaType = type === 'movie' ? 'movie' : 'TV series';
+        if (!confirm(`Are you sure you want to delete this ${mediaType}? This action cannot be undone.`)) {
+            return;
+        }
+        
+        const endpoint = type === 'movie' ? `/api/admin/movies/${id}` : `/api/admin/tv-series/${id}`;
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showAlert(`${mediaType} deleted successfully!`, 'success');
+                // Refresh current results
+                if (searchInput.value.trim()) {
+                    performSearch();
+                } else {
+                    showAllMedia();
+                }
+            } else {
+                showAlert(result.error || `Error deleting ${mediaType}`, 'error');
+            }
+        } catch (error) {
+            showAlert(`Error deleting ${mediaType}`, 'error');
+        }
+    }
+
+    function showAlert(message, type) {
+        const alertContainer = document.getElementById('alert-container');
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.textContent = message;
+        alertContainer.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+    </script>
+</body>
+</html>
