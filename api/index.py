@@ -47,11 +47,11 @@ TMDB_API_KEY = '52f6a75a38a397d940959b336801e1c3'
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
 
-# Database Models - UPDATED: Removed unique constraint on tmdb_id
+# Database Models
 class Movie(db.Model):
     __tablename__ = 'movie'
     id = db.Column(db.Integer, primary_key=True)
-    tmdb_id = db.Column(db.Integer, nullable=False)  # Removed unique=True
+    tmdb_id = db.Column(db.Integer, unique=True, nullable=False)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     poster_url = db.Column(db.String(500))
@@ -64,7 +64,7 @@ class Movie(db.Model):
 class TVSeries(db.Model):
     __tablename__ = 'tv_series'
     id = db.Column(db.Integer, primary_key=True)
-    tmdb_id = db.Column(db.Integer, nullable=False)  # Removed unique=True
+    tmdb_id = db.Column(db.Integer, unique=True, nullable=False)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     poster_url = db.Column(db.String(500))
@@ -221,82 +221,7 @@ def get_tmdb_tv(tmdb_id):
         print(f"Error in TMDB TV API: {e}")
         return make_cors_response({'error': 'Failed to fetch TV details'}, 500)
 
-# Admin API Routes - Get all movies and TV series (for admin panel)
-@app.route('/api/admin/movies', methods=['GET'])
-@auth_required
-def get_admin_movies():
-    try:
-        movies = Movie.query.order_by(Movie.created_at.desc()).all()
-        
-        movie_list = []
-        for movie in movies:
-            movie_list.append({
-                'id': movie.id,
-                'tmdb_id': movie.tmdb_id,
-                'title': movie.title,
-                'description': movie.description,
-                'poster_url': movie.poster_url,
-                'release_date': movie.release_date,
-                'language': movie.language,
-                'video_720p': movie.video_720p,
-                'video_1080p': movie.video_1080p,
-                'created_at': movie.created_at.isoformat() if movie.created_at else None
-            })
-        
-        return make_cors_response({
-            'status': 'success',
-            'total_count': len(movie_list),
-            'movies': movie_list
-        })
-    except Exception as e:
-        print(f"Error getting admin movies: {e}")
-        return make_cors_response({'error': 'Failed to retrieve movies'}, 500)
-
-@app.route('/api/admin/tv-series', methods=['GET'])
-@auth_required
-def get_admin_tv_series():
-    try:
-        tv_series_list = TVSeries.query.order_by(TVSeries.created_at.desc()).all()
-        
-        series_list = []
-        for tv in tv_series_list:
-            # Count total episodes across all seasons
-            total_episodes = 0
-            seasons_data = []
-            
-            for season in tv.seasons:
-                episodes_count = len(season.episodes)
-                total_episodes += episodes_count
-                
-                seasons_data.append({
-                    'season_number': season.season_number,
-                    'episodes_count': episodes_count
-                })
-            
-            series_list.append({
-                'id': tv.id,
-                'tmdb_id': tv.tmdb_id,
-                'title': tv.title,
-                'description': tv.description,
-                'poster_url': tv.poster_url,
-                'release_date': tv.release_date,
-                'language': tv.language,
-                'total_seasons': len(tv.seasons),
-                'total_episodes': total_episodes,
-                'seasons': seasons_data,
-                'created_at': tv.created_at.isoformat() if tv.created_at else None
-            })
-        
-        return make_cors_response({
-            'status': 'success',
-            'total_count': len(series_list),
-            'tv_series': series_list
-        })
-    except Exception as e:
-        print(f"Error getting admin TV series: {e}")
-        return make_cors_response({'error': 'Failed to retrieve TV series'}, 500)
-
-# Admin API Routes - UPDATED: Allow duplicate movies
+# Admin API Routes
 @app.route('/api/admin/movies', methods=['POST'])
 @auth_required
 def add_movie():
@@ -305,8 +230,10 @@ def add_movie():
         if not data:
             return make_cors_response({'error': 'No data provided'}, 400)
         
-        # REMOVED: Duplicate check - now allows same movie multiple times
-        # This allows adding the same movie with different video links or other variations
+        # Check if movie already exists
+        existing_movie = Movie.query.filter_by(tmdb_id=data['tmdb_id']).first()
+        if existing_movie:
+            return make_cors_response({'error': 'Movie already exists'}, 400)
         
         movie = Movie(
             tmdb_id=data['tmdb_id'],
@@ -322,15 +249,7 @@ def add_movie():
         db.session.add(movie)
         db.session.commit()
         
-        # Check how many copies of this movie exist now
-        movie_count = Movie.query.filter_by(tmdb_id=data['tmdb_id']).count()
-        
-        return make_cors_response({
-            'message': 'Movie added successfully', 
-            'id': movie.id,
-            'duplicate_count': movie_count,
-            'note': f'This is copy #{movie_count} of this movie in the database'
-        })
+        return make_cors_response({'message': 'Movie added successfully', 'id': movie.id})
     except Exception as e:
         print(f"Error adding movie: {e}")
         db.session.rollback()
@@ -363,24 +282,14 @@ def edit_movie(movie_id):
 def delete_movie(movie_id):
     try:
         movie = Movie.query.get_or_404(movie_id)
-        tmdb_id = movie.tmdb_id
         db.session.delete(movie)
         db.session.commit()
-        
-        # Check remaining copies
-        remaining_copies = Movie.query.filter_by(tmdb_id=tmdb_id).count()
-        
-        return make_cors_response({
-            'message': 'Movie deleted successfully',
-            'remaining_copies': remaining_copies,
-            'note': f'{remaining_copies} copies of this movie remain in database' if remaining_copies > 0 else 'No more copies of this movie in database'
-        })
+        return make_cors_response({'message': 'Movie deleted successfully'})
     except Exception as e:
         print(f"Error deleting movie: {e}")
         db.session.rollback()
         return make_cors_response({'error': 'Failed to delete movie'}, 500)
 
-# Admin API Routes - UPDATED: Allow duplicate TV series
 @app.route('/api/admin/tv-series', methods=['POST'])
 @auth_required
 def add_tv_series():
@@ -389,8 +298,9 @@ def add_tv_series():
         if not data:
             return make_cors_response({'error': 'No data provided'}, 400)
         
-        # REMOVED: Duplicate check - now allows same TV series multiple times
-        # This allows adding the same TV series with different configurations
+        existing_tv = TVSeries.query.filter_by(tmdb_id=data['tmdb_id']).first()
+        if existing_tv:
+            return make_cors_response({'error': 'TV series already exists'}, 400)
         
         tv_series = TVSeries(
             tmdb_id=data['tmdb_id'],
@@ -404,15 +314,7 @@ def add_tv_series():
         db.session.add(tv_series)
         db.session.commit()
         
-        # Check how many copies of this TV series exist now
-        tv_count = TVSeries.query.filter_by(tmdb_id=data['tmdb_id']).count()
-        
-        return make_cors_response({
-            'message': 'TV series added successfully', 
-            'id': tv_series.id,
-            'duplicate_count': tv_count,
-            'note': f'This is copy #{tv_count} of this TV series in the database'
-        })
+        return make_cors_response({'message': 'TV series added successfully', 'id': tv_series.id})
     except Exception as e:
         print(f"Error adding TV series: {e}")
         db.session.rollback()
@@ -443,18 +345,9 @@ def edit_tv_series(tv_id):
 def delete_tv_series(tv_id):
     try:
         tv_series = TVSeries.query.get_or_404(tv_id)
-        tmdb_id = tv_series.tmdb_id
         db.session.delete(tv_series)
         db.session.commit()
-        
-        # Check remaining copies
-        remaining_copies = TVSeries.query.filter_by(tmdb_id=tmdb_id).count()
-        
-        return make_cors_response({
-            'message': 'TV series deleted successfully',
-            'remaining_copies': remaining_copies,
-            'note': f'{remaining_copies} copies of this TV series remain in database' if remaining_copies > 0 else 'No more copies of this TV series in database'
-        })
+        return make_cors_response({'message': 'TV series deleted successfully'})
     except Exception as e:
         print(f"Error deleting TV series: {e}")
         db.session.rollback()
@@ -502,93 +395,6 @@ def add_episode(tv_id):
         print(f"Error adding episode: {e}")
         db.session.rollback()
         return make_cors_response({'error': 'Failed to add episode'}, 500)
-
-# NEW: Route to get all copies of a specific movie/TV series by TMDB ID
-@app.route('/api/duplicates/movie/<int:tmdb_id>')
-def get_movie_duplicates(tmdb_id):
-    try:
-        movies = Movie.query.filter_by(tmdb_id=tmdb_id).all()
-        
-        if not movies:
-            return make_cors_response({'error': 'No movies found with this TMDB ID'}, 404)
-        
-        movie_list = []
-        for movie in movies:
-            movie_list.append({
-                'id': movie.id,
-                'tmdb_id': movie.tmdb_id,
-                'title': movie.title,
-                'description': movie.description,
-                'poster_url': movie.poster_url,
-                'release_date': movie.release_date,
-                'language': movie.language,
-                'video_links': {
-                    '720p': movie.video_720p,
-                    '1080p': movie.video_1080p
-                },
-                'created_at': movie.created_at.isoformat() if movie.created_at else None
-            })
-        
-        return make_cors_response({
-            'status': 'success',
-            'tmdb_id': tmdb_id,
-            'total_copies': len(movie_list),
-            'movies': movie_list
-        })
-    except Exception as e:
-        print(f"Error getting movie duplicates: {e}")
-        return make_cors_response({'error': 'Failed to get movie duplicates'}, 500)
-
-@app.route('/api/duplicates/tv/<int:tmdb_id>')
-def get_tv_duplicates(tmdb_id):
-    try:
-        tv_series_list = TVSeries.query.filter_by(tmdb_id=tmdb_id).all()
-        
-        if not tv_series_list:
-            return make_cors_response({'error': 'No TV series found with this TMDB ID'}, 404)
-        
-        series_list = []
-        for tv in tv_series_list:
-            # Collect all episodes with their video links
-            all_episodes = {}
-            for season in tv.seasons:
-                season_key = f"season_{season.season_number}"
-                episodes_list = []
-                
-                for episode in season.episodes:
-                    episodes_list.append({
-                        'episode_number': episode.episode_number,
-                        'video_720p': episode.video_720p
-                    })
-                
-                all_episodes[season_key] = {
-                    'season_number': season.season_number,
-                    'total_episodes': len(episodes_list),
-                    'episodes': episodes_list
-                }
-            
-            series_list.append({
-                'id': tv.id,
-                'tmdb_id': tv.tmdb_id,
-                'title': tv.title,
-                'description': tv.description,
-                'poster_url': tv.poster_url,
-                'release_date': tv.release_date,
-                'language': tv.language,
-                'total_seasons': len(tv.seasons),
-                'seasons': all_episodes,
-                'created_at': tv.created_at.isoformat() if tv.created_at else None
-            })
-        
-        return make_cors_response({
-            'status': 'success',
-            'tmdb_id': tmdb_id,
-            'total_copies': len(series_list),
-            'tv_series': series_list
-        })
-    except Exception as e:
-        print(f"Error getting TV duplicates: {e}")
-        return make_cors_response({'error': 'Failed to get TV duplicates'}, 500)
 
 # Public API Routes - Enhanced with all video links
 @app.route('/media')
@@ -816,150 +622,139 @@ def search_media():
         })
     except Exception as e:
         print(f"Error in search: {e}")
-        return make_cors_response({'error': 'Failed to search media'}, 500)
+        return make_cors_response({'error': 'Search failed'}, 500)
 
-# Health check and utility routes
 @app.route('/health')
 def health_check():
     try:
-        # Test database connection
         db.session.execute(db.text('SELECT 1'))
-        db_status = 'connected'
+        return make_cors_response({
+            'status': 'healthy',
+            'database': 'connected',
+            'cors_enabled': True,
+            'timestamp': datetime.utcnow().isoformat(),
+            'version': '2.0'
+        })
     except Exception as e:
-        db_status = f'error: {str(e)}'
-    
-    return make_cors_response({
-        'status': 'healthy',
-        'database': db_status,
-        'timestamp': datetime.now().isoformat(),
-        'version': '2.0'
-    })
+        return make_cors_response({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }, 500)
 
 @app.route('/api/stats')
 def get_stats():
     try:
-        movie_count = Movie.query.count()
-        tv_count = TVSeries.query.count()
-        season_count = Season.query.count()
-        episode_count = Episode.query.count()
+        movies_count = Movie.query.count()
+        tv_series_count = TVSeries.query.count()
+        episodes_count = Episode.query.count()
         
-        # Get unique TMDB IDs count
-        unique_movies = db.session.query(Movie.tmdb_id).distinct().count()
-        unique_tv = db.session.query(TVSeries.tmdb_id).distinct().count()
-        
-        return make_cors_response({
+        stats = {
             'status': 'success',
-            'statistics': {
-                'total_movies': movie_count,
-                'total_tv_series': tv_count,
-                'total_seasons': season_count,
-                'total_episodes': episode_count,
-                'unique_movies': unique_movies,
-                'unique_tv_series': unique_tv,
-                'duplicate_movies': movie_count - unique_movies,
-                'duplicate_tv_series': tv_count - unique_tv
-            },
-            'timestamp': datetime.now().isoformat()
-        })
+            'total_movies': movies_count,
+            'total_tv_series': tv_series_count,
+            'total_episodes': episodes_count,
+            'total_media': movies_count + tv_series_count,
+            'database_name': 'Zero Creations Media Database',
+            'database_type': 'PostgreSQL (Neon)',
+            'version': '2.0',
+            'cors_enabled': True,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        return make_cors_response(stats)
     except Exception as e:
-        print(f"Error getting stats: {e}")
-        return make_cors_response({'error': 'Failed to get statistics'}, 500)
+        print(f"Error in stats: {e}")
+        return make_cors_response({'error': 'Failed to get stats'}, 500)
 
 @app.route('/api/docs')
 def api_docs():
-    return make_cors_response({
-        'api_documentation': {
+    try:
+        return render_template('api_docs.html')
+    except Exception as e:
+        print(f"Error loading API docs: {e}")
+        return make_cors_response({
+            'message': 'Zero Creations Media Database API Documentation',
             'version': '2.0',
-            'base_url': request.host_url,
-            'authentication': {
-                'admin_routes': 'Basic Auth (username: venura, password: venura)',
-                'public_routes': 'No authentication required'
+            'cors_enabled': True,
+            'public_endpoints': {
+                'get_all_media': {
+                    'url': '/media',
+                    'method': 'GET',
+                    'description': 'Get all media with video links',
+                    'response': 'JSON with movies and TV series including video links'
+                },
+                'get_media_detail': {
+                    'url': '/media/<id>',
+                    'method': 'GET',
+                    'description': 'Get specific media with all episodes',
+                    'response': 'JSON with detailed media information'
+                },
+                'search_media': {
+                    'url': '/search?q=<query>',
+                    'method': 'GET',
+                    'description': 'Search media with video links',
+                    'parameters': 'q (required) - search query',
+                    'response': 'JSON with search results'
+                },
+                'health_check': {
+                    'url': '/health',
+                    'method': 'GET',
+                    'description': 'API health check',
+                    'response': 'JSON with system status'
+                },
+                'get_stats': {
+                    'url': '/api/stats',
+                    'method': 'GET',
+                    'description': 'Get database statistics',
+                    'response': 'JSON with media counts and info'
+                }
             },
-            'endpoints': {
-                'public_api': {
-                    'GET /media': 'Get all movies and TV series',
-                    'GET /media/<id>': 'Get specific media details',
-                    'GET /search?q=<query>': 'Search media by title, description, or language',
-                    'GET /health': 'Health check',
-                    'GET /api/stats': 'Database statistics',
-                    'GET /api/docs': 'This documentation'
-                },
-                'admin_api': {
-                    'GET /admin': 'Admin panel (requires auth)',
-                    'GET /api/admin/movies': 'Get all movies for admin',
-                    'POST /api/admin/movies': 'Add new movie',
-                    'PUT /api/admin/movies/<id>': 'Update movie',
-                    'DELETE /api/admin/movies/<id>': 'Delete movie',
-                    'GET /api/admin/tv-series': 'Get all TV series for admin',
-                    'POST /api/admin/tv-series': 'Add new TV series',
-                    'PUT /api/admin/tv-series/<id>': 'Update TV series',
-                    'DELETE /api/admin/tv-series/<id>': 'Delete TV series',
-                    'POST /api/admin/tv-series/<id>/episodes': 'Add episode to TV series'
-                },
-                'tmdb_integration': {
-                    'GET /api/tmdb/movie/<tmdb_id>': 'Fetch movie details from TMDB',
-                    'GET /api/tmdb/tv/<tmdb_id>': 'Fetch TV series details from TMDB'
-                },
-                'duplicate_management': {
-                    'GET /api/duplicates/movie/<tmdb_id>': 'Get all copies of a movie by TMDB ID',
-                    'GET /api/duplicates/tv/<tmdb_id>': 'Get all copies of a TV series by TMDB ID'
+            'admin_endpoints': {
+                'admin_panel': {
+                    'url': '/admin',
+                    'method': 'GET',
+                    'description': 'Admin panel (requires auth: venura/venura)',
+                    'auth': 'Basic Auth'
                 }
             },
             'features': [
                 'CORS enabled for all origins',
-                'Duplicate media entries allowed',
-                'TMDB integration for metadata',
-                'Full CRUD operations for admin',
+                'RESTful API design',
+                'JSON responses',
                 'Search functionality',
-                'Episode management for TV series',
-                'Comprehensive error handling',
-                'Database connection pooling'
+                'Admin authentication',
+                'TMDB integration',
+                'PostgreSQL/SQLite support'
             ]
-        }
-    })
+        })
 
-# OPTIONS handler for CORS preflight requests
-@app.route('/<path:path>', methods=['OPTIONS'])
-def handle_options(path):
-    return make_cors_response('', 200)
-
-@app.route('/api/<path:path>', methods=['OPTIONS'])
-def handle_api_options(path):
-    return make_cors_response('', 200)
-
-# Error handlers
+# Error handlers with CORS
 @app.errorhandler(404)
 def not_found(error):
-    return make_cors_response({'error': 'Endpoint not found'}, 404)
+    return make_cors_response({'error': 'Endpoint not found', 'status': 404}, 404)
 
 @app.errorhandler(500)
 def internal_error(error):
-    db.session.rollback()
-    return make_cors_response({'error': 'Internal server error'}, 500)
+    return make_cors_response({'error': 'Internal server error', 'status': 500}, 500)
 
-@app.errorhandler(401)
-def unauthorized(error):
-    return make_cors_response({'error': 'Unauthorized access'}, 401)
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return make_cors_response({'error': 'Method not allowed', 'status': 405}, 405)
 
-# Initialize database when script runs
-if __name__ == '__main__':
-    print("🚀 Starting Zero Creations Media Database...")
-    
-    # Initialize database
-    if init_db():
-        print("✅ Database ready")
-    else:
-        print("❌ Database initialization failed")
-        exit(1)
-    
-    # Start the application
-    port = int(os.environ.get('PORT', 5000))
-    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    print(f"🌐 Server starting on port {port}")
-    print(f"🔧 Debug mode: {debug_mode}")
-    print(f"📊 Admin panel: http://localhost:{port}/admin")
-    print(f"🔗 Public API: http://localhost:{port}/media")
-    print(f"📖 API docs: http://localhost:{port}/api/docs")
-    
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+# Handle preflight requests for CORS
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_cors_response({'message': 'CORS preflight successful'})
+        return response
+
+# Initialize database on startup
+init_db()
+
+# For Vercel deployment
+if __name__ != '__main__':
+    application = app
+else:
+    app.run(debug=True, host='0.0.0.0', port=5000)
