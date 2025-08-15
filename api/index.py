@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 import requests
 import json
 from functools import wraps
@@ -8,6 +9,16 @@ from datetime import datetime
 
 app = Flask(__name__, template_folder='../templates')
 app.config['SECRET_KEY'] = 'zero-creations-media-database-2024'
+
+# Enable CORS for all routes and origins
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+        "expose_headers": ["Content-Range", "X-Content-Range"]
+    }
+})
 
 # Database configuration with error handling
 try:
@@ -96,9 +107,10 @@ def auth_required(f):
         try:
             auth = request.authorization
             if not auth or auth.username != 'venura' or auth.password != 'venura':
-                return ('Authentication required', 401, {
-                    'WWW-Authenticate': 'Basic realm="Admin Panel"'
-                })
+                response = jsonify({'error': 'Authentication required'})
+                response.status_code = 401
+                response.headers['WWW-Authenticate'] = 'Basic realm="Admin Panel"'
+                return response
             return f(*args, **kwargs)
         except Exception as e:
             print(f"Auth error: {e}")
@@ -140,6 +152,18 @@ def fetch_tv_details(tmdb_id):
         print(f"Error fetching TV details: {e}")
     return None
 
+# Custom CORS response helper
+def make_cors_response(data, status_code=200):
+    response = app.response_class(
+        response=json.dumps(data, indent=4) if isinstance(data, (dict, list)) else data,
+        status=status_code,
+        mimetype='application/json'
+    )
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    return response
+
 # Routes with comprehensive error handling
 @app.route('/')
 def index():
@@ -147,11 +171,20 @@ def index():
         return render_template('index.html')
     except Exception as e:
         print(f"Error in index route: {e}")
-        return jsonify({
-            'status': 'error',
+        return make_cors_response({
+            'status': 'success',
             'message': 'Zero Creations Media Database is running',
-            'admin_panel': '/admin',
-            'public_api': '/media'
+            'version': '2.0',
+            'endpoints': {
+                'admin_panel': '/admin',
+                'public_api': '/media',
+                'search': '/search?q=query',
+                'health': '/health',
+                'stats': '/api/stats',
+                'docs': '/api/docs'
+            },
+            'cors_enabled': True,
+            'database_connected': True
         })
 
 @app.route('/admin')
@@ -161,7 +194,7 @@ def admin_panel():
         return render_template('admin_all_in_one.html')
     except Exception as e:
         print(f"Error in admin route: {e}")
-        return jsonify({'error': 'Could not load admin panel', 'details': str(e)}), 500
+        return make_cors_response({'error': 'Could not load admin panel', 'details': str(e)}, 500)
 
 # TMDB API Routes
 @app.route('/api/tmdb/movie/<int:tmdb_id>')
@@ -170,11 +203,11 @@ def get_tmdb_movie(tmdb_id):
     try:
         details = fetch_movie_details(tmdb_id)
         if details:
-            return jsonify(details)
-        return jsonify({'error': 'Movie not found'}), 404
+            return make_cors_response(details)
+        return make_cors_response({'error': 'Movie not found'}, 404)
     except Exception as e:
         print(f"Error in TMDB movie API: {e}")
-        return jsonify({'error': 'Failed to fetch movie details'}), 500
+        return make_cors_response({'error': 'Failed to fetch movie details'}, 500)
 
 @app.route('/api/tmdb/tv/<int:tmdb_id>')
 @auth_required
@@ -182,11 +215,11 @@ def get_tmdb_tv(tmdb_id):
     try:
         details = fetch_tv_details(tmdb_id)
         if details:
-            return jsonify(details)
-        return jsonify({'error': 'TV series not found'}), 404
+            return make_cors_response(details)
+        return make_cors_response({'error': 'TV series not found'}, 404)
     except Exception as e:
         print(f"Error in TMDB TV API: {e}")
-        return jsonify({'error': 'Failed to fetch TV details'}), 500
+        return make_cors_response({'error': 'Failed to fetch TV details'}, 500)
 
 # Admin API Routes
 @app.route('/api/admin/movies', methods=['POST'])
@@ -195,12 +228,12 @@ def add_movie():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return make_cors_response({'error': 'No data provided'}, 400)
         
         # Check if movie already exists
         existing_movie = Movie.query.filter_by(tmdb_id=data['tmdb_id']).first()
         if existing_movie:
-            return jsonify({'error': 'Movie already exists'}), 400
+            return make_cors_response({'error': 'Movie already exists'}, 400)
         
         movie = Movie(
             tmdb_id=data['tmdb_id'],
@@ -216,11 +249,11 @@ def add_movie():
         db.session.add(movie)
         db.session.commit()
         
-        return jsonify({'message': 'Movie added successfully', 'id': movie.id})
+        return make_cors_response({'message': 'Movie added successfully', 'id': movie.id})
     except Exception as e:
         print(f"Error adding movie: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to add movie'}), 500
+        return make_cors_response({'error': 'Failed to add movie'}, 500)
 
 @app.route('/api/admin/movies/<int:movie_id>', methods=['PUT'])
 @auth_required
@@ -238,11 +271,11 @@ def edit_movie(movie_id):
         movie.video_1080p = data.get('video_1080p', movie.video_1080p)
         
         db.session.commit()
-        return jsonify({'message': 'Movie updated successfully'})
+        return make_cors_response({'message': 'Movie updated successfully'})
     except Exception as e:
         print(f"Error updating movie: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to update movie'}), 500
+        return make_cors_response({'error': 'Failed to update movie'}, 500)
 
 @app.route('/api/admin/movies/<int:movie_id>', methods=['DELETE'])
 @auth_required
@@ -251,11 +284,11 @@ def delete_movie(movie_id):
         movie = Movie.query.get_or_404(movie_id)
         db.session.delete(movie)
         db.session.commit()
-        return jsonify({'message': 'Movie deleted successfully'})
+        return make_cors_response({'message': 'Movie deleted successfully'})
     except Exception as e:
         print(f"Error deleting movie: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to delete movie'}), 500
+        return make_cors_response({'error': 'Failed to delete movie'}, 500)
 
 @app.route('/api/admin/tv-series', methods=['POST'])
 @auth_required
@@ -263,11 +296,11 @@ def add_tv_series():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return make_cors_response({'error': 'No data provided'}, 400)
         
         existing_tv = TVSeries.query.filter_by(tmdb_id=data['tmdb_id']).first()
         if existing_tv:
-            return jsonify({'error': 'TV series already exists'}), 400
+            return make_cors_response({'error': 'TV series already exists'}, 400)
         
         tv_series = TVSeries(
             tmdb_id=data['tmdb_id'],
@@ -281,11 +314,11 @@ def add_tv_series():
         db.session.add(tv_series)
         db.session.commit()
         
-        return jsonify({'message': 'TV series added successfully', 'id': tv_series.id})
+        return make_cors_response({'message': 'TV series added successfully', 'id': tv_series.id})
     except Exception as e:
         print(f"Error adding TV series: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to add TV series'}), 500
+        return make_cors_response({'error': 'Failed to add TV series'}, 500)
 
 @app.route('/api/admin/tv-series/<int:tv_id>', methods=['PUT'])
 @auth_required
@@ -301,11 +334,11 @@ def edit_tv_series(tv_id):
         tv_series.language = data.get('language', tv_series.language)
         
         db.session.commit()
-        return jsonify({'message': 'TV series updated successfully'})
+        return make_cors_response({'message': 'TV series updated successfully'})
     except Exception as e:
         print(f"Error updating TV series: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to update TV series'}), 500
+        return make_cors_response({'error': 'Failed to update TV series'}, 500)
 
 @app.route('/api/admin/tv-series/<int:tv_id>', methods=['DELETE'])
 @auth_required
@@ -314,11 +347,11 @@ def delete_tv_series(tv_id):
         tv_series = TVSeries.query.get_or_404(tv_id)
         db.session.delete(tv_series)
         db.session.commit()
-        return jsonify({'message': 'TV series deleted successfully'})
+        return make_cors_response({'message': 'TV series deleted successfully'})
     except Exception as e:
         print(f"Error deleting TV series: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to delete TV series'}), 500
+        return make_cors_response({'error': 'Failed to delete TV series'}, 500)
 
 @app.route('/api/admin/tv-series/<int:tv_id>/episodes', methods=['POST'])
 @auth_required
@@ -346,7 +379,7 @@ def add_episode(tv_id):
         ).first()
         
         if existing_episode:
-            return jsonify({'error': 'Episode already exists'}), 400
+            return make_cors_response({'error': 'Episode already exists'}, 400)
         
         episode = Episode(
             season_id=season.id,
@@ -357,11 +390,11 @@ def add_episode(tv_id):
         db.session.add(episode)
         db.session.commit()
         
-        return jsonify({'message': 'Episode added successfully'})
+        return make_cors_response({'message': 'Episode added successfully'})
     except Exception as e:
         print(f"Error adding episode: {e}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to add episode'}), 500
+        return make_cors_response({'error': 'Failed to add episode'}, 500)
 
 # Public API Routes - Enhanced with all video links
 @app.route('/media')
@@ -385,7 +418,8 @@ def get_all_media():
                 'video_links': {
                     '720p': movie.video_720p,
                     '1080p': movie.video_1080p
-                }
+                },
+                'created_at': movie.created_at.isoformat() if movie.created_at else None
             })
         
         for tv in tv_series:
@@ -417,17 +451,20 @@ def get_all_media():
                 'language': tv.language,
                 'total_seasons': len(tv.seasons),
                 'tmdb_id': tv.tmdb_id,
-                'seasons': all_episodes
+                'seasons': all_episodes,
+                'created_at': tv.created_at.isoformat() if tv.created_at else None
             })
         
-        return app.response_class(
-            response=json.dumps(media_list, indent=4),
-            status=200,
-            mimetype='application/json'
-        )
+        return make_cors_response({
+            'status': 'success',
+            'total_count': len(media_list),
+            'movies_count': len([m for m in media_list if m['type'] == 'movie']),
+            'tv_series_count': len([m for m in media_list if m['type'] == 'tv']),
+            'data': media_list
+        })
     except Exception as e:
         print(f"Error in get_all_media: {e}")
-        return jsonify({'error': 'Failed to retrieve media'}), 500
+        return make_cors_response({'error': 'Failed to retrieve media'}, 500)
 
 @app.route('/media/<int:media_id>')
 def get_media_details(media_id):
@@ -447,13 +484,13 @@ def get_media_details(media_id):
                 'video_links': {
                     '720p': movie.video_720p,
                     '1080p': movie.video_1080p
-                }
+                },
+                'created_at': movie.created_at.isoformat() if movie.created_at else None
             }
-            return app.response_class(
-                response=json.dumps(movie_data, indent=4),
-                status=200,
-                mimetype='application/json'
-            )
+            return make_cors_response({
+                'status': 'success',
+                'data': movie_data
+            })
         
         # Try TV series
         tv_series = TVSeries.query.get(media_id)
@@ -486,26 +523,26 @@ def get_media_details(media_id):
                 'language': tv_series.language,
                 'total_seasons': len(tv_series.seasons),
                 'tmdb_id': tv_series.tmdb_id,
-                'seasons': seasons_data
+                'seasons': seasons_data,
+                'created_at': tv_series.created_at.isoformat() if tv_series.created_at else None
             }
             
-            return app.response_class(
-                response=json.dumps(tv_data, indent=4),
-                status=200,
-                mimetype='application/json'
-            )
+            return make_cors_response({
+                'status': 'success',
+                'data': tv_data
+            })
         
-        return jsonify({'error': 'Media not found'}), 404
+        return make_cors_response({'error': 'Media not found'}, 404)
     except Exception as e:
         print(f"Error in get_media_details: {e}")
-        return jsonify({'error': 'Failed to retrieve media details'}), 500
+        return make_cors_response({'error': 'Failed to retrieve media details'}, 500)
 
 @app.route('/search')
 def search_media():
     try:
         query = request.args.get('q', '').strip()
         if not query:
-            return jsonify({'error': 'Search query is required'}), 400
+            return make_cors_response({'error': 'Search query is required'}, 400)
         
         movies = Movie.query.filter(
             db.or_(
@@ -538,7 +575,8 @@ def search_media():
                 'video_links': {
                     '720p': movie.video_720p,
                     '1080p': movie.video_1080p
-                }
+                },
+                'created_at': movie.created_at.isoformat() if movie.created_at else None
             })
         
         for tv in tv_series:
@@ -570,38 +608,40 @@ def search_media():
                 'language': tv.language,
                 'total_seasons': len(tv.seasons),
                 'tmdb_id': tv.tmdb_id,
-                'seasons': all_episodes
+                'seasons': all_episodes,
+                'created_at': tv.created_at.isoformat() if tv.created_at else None
             })
         
-        return app.response_class(
-            response=json.dumps({
-                'query': query,
-                'total_results': len(results),
-                'results': results
-            }, indent=4),
-            status=200,
-            mimetype='application/json'
-        )
+        return make_cors_response({
+            'status': 'success',
+            'query': query,
+            'total_results': len(results),
+            'movies_count': len([r for r in results if r['type'] == 'movie']),
+            'tv_series_count': len([r for r in results if r['type'] == 'tv']),
+            'results': results
+        })
     except Exception as e:
         print(f"Error in search: {e}")
-        return jsonify({'error': 'Search failed'}), 500
+        return make_cors_response({'error': 'Search failed'}, 500)
 
 @app.route('/health')
 def health_check():
     try:
         db.session.execute(db.text('SELECT 1'))
-        return jsonify({
+        return make_cors_response({
             'status': 'healthy',
             'database': 'connected',
-            'timestamp': datetime.utcnow().isoformat()
+            'cors_enabled': True,
+            'timestamp': datetime.utcnow().isoformat(),
+            'version': '2.0'
         })
     except Exception as e:
-        return jsonify({
+        return make_cors_response({
             'status': 'unhealthy',
             'database': 'disconnected',
             'error': str(e),
             'timestamp': datetime.utcnow().isoformat()
-        }), 500
+        }, 500)
 
 @app.route('/api/stats')
 def get_stats():
@@ -611,22 +651,22 @@ def get_stats():
         episodes_count = Episode.query.count()
         
         stats = {
+            'status': 'success',
             'total_movies': movies_count,
             'total_tv_series': tv_series_count,
             'total_episodes': episodes_count,
             'total_media': movies_count + tv_series_count,
             'database_name': 'Zero Creations Media Database',
-            'database_type': 'PostgreSQL (Neon)'
+            'database_type': 'PostgreSQL (Neon)',
+            'version': '2.0',
+            'cors_enabled': True,
+            'timestamp': datetime.utcnow().isoformat()
         }
         
-        return app.response_class(
-            response=json.dumps(stats, indent=4),
-            status=200,
-            mimetype='application/json'
-        )
+        return make_cors_response(stats)
     except Exception as e:
         print(f"Error in stats: {e}")
-        return jsonify({'error': 'Failed to get stats'}), 500
+        return make_cors_response({'error': 'Failed to get stats'}, 500)
 
 @app.route('/api/docs')
 def api_docs():
@@ -634,25 +674,81 @@ def api_docs():
         return render_template('api_docs.html')
     except Exception as e:
         print(f"Error loading API docs: {e}")
-        return jsonify({
-            'message': 'API Documentation',
-            'endpoints': {
-                'media': '/media - Get all media with video links',
-                'media_detail': '/media/<id> - Get specific media with all episodes',
-                'search': '/search?q=query - Search media with video links',
-                'health': '/health - Health check',
-                'admin': '/admin - Admin panel (venura/venura)'
-            }
+        return make_cors_response({
+            'message': 'Zero Creations Media Database API Documentation',
+            'version': '2.0',
+            'cors_enabled': True,
+            'public_endpoints': {
+                'get_all_media': {
+                    'url': '/media',
+                    'method': 'GET',
+                    'description': 'Get all media with video links',
+                    'response': 'JSON with movies and TV series including video links'
+                },
+                'get_media_detail': {
+                    'url': '/media/<id>',
+                    'method': 'GET',
+                    'description': 'Get specific media with all episodes',
+                    'response': 'JSON with detailed media information'
+                },
+                'search_media': {
+                    'url': '/search?q=<query>',
+                    'method': 'GET',
+                    'description': 'Search media with video links',
+                    'parameters': 'q (required) - search query',
+                    'response': 'JSON with search results'
+                },
+                'health_check': {
+                    'url': '/health',
+                    'method': 'GET',
+                    'description': 'API health check',
+                    'response': 'JSON with system status'
+                },
+                'get_stats': {
+                    'url': '/api/stats',
+                    'method': 'GET',
+                    'description': 'Get database statistics',
+                    'response': 'JSON with media counts and info'
+                }
+            },
+            'admin_endpoints': {
+                'admin_panel': {
+                    'url': '/admin',
+                    'method': 'GET',
+                    'description': 'Admin panel (requires auth: venura/venura)',
+                    'auth': 'Basic Auth'
+                }
+            },
+            'features': [
+                'CORS enabled for all origins',
+                'RESTful API design',
+                'JSON responses',
+                'Search functionality',
+                'Admin authentication',
+                'TMDB integration',
+                'PostgreSQL/SQLite support'
+            ]
         })
 
-# Error handlers
+# Error handlers with CORS
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Not found'}), 404
+    return make_cors_response({'error': 'Endpoint not found', 'status': 404}, 404)
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({'error': 'Internal server error'}), 500
+    return make_cors_response({'error': 'Internal server error', 'status': 500}, 500)
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return make_cors_response({'error': 'Method not allowed', 'status': 405}, 405)
+
+# Handle preflight requests for CORS
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_cors_response({'message': 'CORS preflight successful'})
+        return response
 
 # Initialize database on startup
 init_db()
