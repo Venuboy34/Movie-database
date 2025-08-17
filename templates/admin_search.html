@@ -93,6 +93,10 @@
             color: #fff;
         }
         
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
         .search-box input:focus {
             outline: none;
             border-color: #667eea;
@@ -176,6 +180,16 @@
             border-radius: 15px;
             font-size: 0.8rem;
             font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .duplicate-badge {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 500;
         }
         
         .media-actions {
@@ -243,6 +257,11 @@
             color: #fff;
         }
         
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
@@ -265,6 +284,27 @@
         .alert-error {
             background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
             color: white;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         @media (max-width: 768px) {
@@ -304,9 +344,8 @@
             <div class="nav">
                 <a href="/">Home</a>
                 <a href="/admin">Admin Panel</a>
-                <a href="/admin/movies">Movies</a>
-                <a href="/admin/tv-series">TV Series</a>
-                <a href="/admin/search">Search & Edit</a>
+                <a href="/media">Public API</a>
+                <a href="/api/docs">API Docs</a>
             </div>
         </div>
         
@@ -384,6 +423,12 @@
     </div>
 
     <script>
+    // Create auth headers for Basic Authentication
+    const authHeaders = {
+        'Authorization': 'Basic ' + btoa('venura:venura'),
+        'Content-Type': 'application/json'
+    };
+
     const modal = document.getElementById('editModal');
     const closeBtn = document.querySelector('.close');
     const searchInput = document.getElementById('search-input');
@@ -408,35 +453,48 @@
             return;
         }
 
+        resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;"><span class="spinner"></span>Searching...</p>';
+
         try {
             const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
             if (response.ok) {
                 const data = await response.json();
-                displayResults(data.results, `Search results for "${query}" (${data.total_results} found)`);
+                displayResults(data.results || data.data || [], `Search results for "${query}" (${data.total_results || data.results?.length || 0} found)`);
             } else {
-                showAlert('Error performing search', 'error');
+                const error = await response.json();
+                showAlert(error.message || 'Error performing search', 'error');
+                resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error performing search</p>';
             }
         } catch (error) {
+            console.error('Error performing search:', error);
             showAlert('Error performing search', 'error');
+            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error performing search</p>';
         }
     }
 
     async function showAllMedia() {
+        resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;"><span class="spinner"></span>Loading all media...</p>';
+
         try {
             const response = await fetch('/media');
             if (response.ok) {
                 const data = await response.json();
-                displayResults(data, `All Media (${data.length} items)`);
+                const mediaList = data.data || data;
+                displayResults(mediaList, `All Media (${mediaList.length} items)`);
             } else {
-                showAlert('Error loading media', 'error');
+                const error = await response.json();
+                showAlert(error.message || 'Error loading media', 'error');
+                resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error loading media</p>';
             }
         } catch (error) {
+            console.error('Error loading media:', error);
             showAlert('Error loading media', 'error');
+            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error loading media</p>';
         }
     }
 
     function displayResults(results, title) {
-        if (results.length === 0) {
+        if (!results || results.length === 0) {
             resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">No results found</p>';
             return;
         }
@@ -444,17 +502,27 @@
         let html = `<h4 style="color: #fff; margin-bottom: 20px;">${title}</h4>`;
         
         results.forEach(item => {
+            // Handle both API response formats
+            const videoLinks = item.video_links || {
+                '720p': item.video_720p,
+                '1080p': item.video_1080p
+            };
+            
             html += `
                 <div class="media-item">
                     ${item.poster_url ? `<img src="${item.poster_url}" alt="${item.title}" class="media-poster">` : 
                       `<div class="media-poster" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem;">${item.type === 'movie' ? '🎬' : '📺'}</div>`}
                     <div class="media-info">
                         <h4>${item.title}</h4>
-                        <span class="media-type">${item.type.toUpperCase()}</span>
+                        <div style="margin-bottom: 10px;">
+                            <span class="media-type">${item.type.toUpperCase()}</span>
+                            ${item.tmdb_id ? `<span class="duplicate-badge">TMDB: ${item.tmdb_id}</span>` : ''}
+                        </div>
                         <p><strong>Release:</strong> ${item.release_date || 'N/A'}</p>
                         <p><strong>Language:</strong> ${item.language || 'N/A'}</p>
                         <p><strong>Description:</strong> ${item.description ? item.description.substring(0, 100) + '...' : 'No description'}</p>
                         ${item.type === 'tv' ? `<p><strong>Seasons:</strong> ${item.total_seasons || 0}</p>` : ''}
+                        ${item.type === 'movie' && videoLinks ? `<p><strong>Videos:</strong> ${videoLinks['720p'] ? '720p ' : ''}${videoLinks['1080p'] ? '1080p' : ''}</p>` : ''}
                     </div>
                     <div class="media-actions">
                         <button class="btn btn-warning btn-small edit-btn" data-id="${item.id}" data-type="${item.type}">Edit</button>
@@ -496,11 +564,12 @@
         try {
             const response = await fetch(`/media/${id}`);
             if (response.ok) {
-                const media = await response.json();
+                const result = await response.json();
+                const media = result.data || result;
                 
                 document.getElementById('edit-id').value = id;
                 document.getElementById('edit-type').value = type;
-                document.getElementById('edit-title').value = media.title;
+                document.getElementById('edit-title').value = media.title || '';
                 document.getElementById('edit-description').value = media.description || '';
                 document.getElementById('edit-poster-url').value = media.poster_url || '';
                 document.getElementById('edit-release-date').value = media.release_date || '';
@@ -511,8 +580,9 @@
                 
                 if (type === 'movie') {
                     movieFields.style.display = 'block';
-                    document.getElementById('edit-video-720p').value = media.video_links['720p'] || '';
-                    document.getElementById('edit-video-1080p').value = media.video_links['1080p'] || '';
+                    const videoLinks = media.video_links || {};
+                    document.getElementById('edit-video-720p').value = videoLinks['720p'] || media.video_720p || '';
+                    document.getElementById('edit-video-1080p').value = videoLinks['1080p'] || media.video_1080p || '';
                     modalTitle.textContent = 'Edit Movie';
                 } else {
                     movieFields.style.display = 'none';
@@ -520,8 +590,12 @@
                 }
                 
                 modal.style.display = 'block';
+            } else {
+                const error = await response.json();
+                showAlert(error.message || 'Error loading media details', 'error');
             }
         } catch (error) {
+            console.error('Error loading media details:', error);
             showAlert('Error loading media details', 'error');
         }
     }
@@ -537,19 +611,22 @@
         
         const endpoint = type === 'movie' ? `/api/admin/movies/${id}` : `/api/admin/tv-series/${id}`;
         
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = '<span class="spinner"></span>Updating...';
+        submitBtn.disabled = true;
+        
         try {
             const response = await fetch(endpoint, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: authHeaders,
                 body: JSON.stringify(mediaData)
             });
             
             const result = await response.json();
             
             if (response.ok) {
-                showAlert(`${type === 'movie' ? 'Movie' : 'TV Series'} updated successfully!`, 'success');
+                showAlert(result.message || `${type === 'movie' ? 'Movie' : 'TV Series'} updated successfully!`, 'success');
                 modal.style.display = 'none';
                 // Refresh current results
                 if (searchInput.value.trim()) {
@@ -558,10 +635,14 @@
                     showAllMedia();
                 }
             } else {
-                showAlert(result.error || `Error updating ${type}`, 'error');
+                showAlert(result.message || result.error || `Error updating ${type}`, 'error');
             }
         } catch (error) {
+            console.error(`Error updating ${type}:`, error);
             showAlert(`Error updating ${type}`, 'error');
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         }
     });
 
@@ -577,15 +658,13 @@
         try {
             const response = await fetch(endpoint, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: authHeaders
             });
             
             const result = await response.json();
             
             if (response.ok) {
-                showAlert(`${mediaType} deleted successfully!`, 'success');
+                showAlert(result.message || `${mediaType} deleted successfully!`, 'success');
                 // Refresh current results
                 if (searchInput.value.trim()) {
                     performSearch();
@@ -593,9 +672,10 @@
                     showAllMedia();
                 }
             } else {
-                showAlert(result.error || `Error deleting ${mediaType}`, 'error');
+                showAlert(result.message || result.error || `Error deleting ${mediaType}`, 'error');
             }
         } catch (error) {
+            console.error(`Error deleting ${mediaType}:`, error);
             showAlert(`Error deleting ${mediaType}`, 'error');
         }
     }
