@@ -1,4 +1,4 @@
--- Create a shared sequence for all media (movies + tv_series)
+-- Create shared sequence for all media content
 CREATE SEQUENCE IF NOT EXISTS media_id_seq START 1;
 
 -- Movies table (uses shared sequence)
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS tv_series (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seasons table (keeps its own sequence)
+-- Seasons table (independent sequence)
 CREATE TABLE IF NOT EXISTS season (
     id SERIAL PRIMARY KEY,
     tv_series_id INTEGER NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS season (
     UNIQUE (tv_series_id, season_number)
 );
 
--- Episodes table (keeps its own sequence)
+-- Episodes table (independent sequence)
 CREATE TABLE IF NOT EXISTS episode (
     id SERIAL PRIMARY KEY,
     season_id INTEGER NOT NULL,
@@ -46,7 +46,27 @@ CREATE TABLE IF NOT EXISTS episode (
     UNIQUE (season_id, episode_number)
 );
 
--- Set the sequence to the current maximum ID + 1 (if migrating existing data)
--- (Run this only if you have existing data)
--- SELECT setval('media_id_seq', (SELECT GREATEST(MAX(id), 0) FROM movie) + 1);
--- SELECT setval('media_id_seq', (SELECT GREATEST(MAX(id), (SELECT MAX(id) FROM tv_series), 0) + 1));
+-- Migration script for existing data (run only if needed)
+DO $$
+BEGIN
+    -- Only execute if movies table has data
+    IF EXISTS (SELECT 1 FROM movie LIMIT 1) THEN
+        -- Set sequence to max existing ID + 1
+        PERFORM setval('media_id_seq', (SELECT MAX(id) FROM movie) + 1);
+        
+        -- Output confirmation
+        RAISE NOTICE 'Migrated movie IDs, next ID will be %', currval('media_id_seq');
+    END IF;
+    
+    -- Only execute if tv_series table has data
+    IF EXISTS (SELECT 1 FROM tv_series LIMIT 1) THEN
+        -- Advance sequence if tv_series has higher IDs
+        PERFORM setval('media_id_seq', GREATEST(
+            currval('media_id_seq'),
+            (SELECT MAX(id) FROM tv_series) + 1
+        ));
+        
+        -- Output confirmation
+        RAISE NOTICE 'Migrated tv_series IDs, next ID will be %', currval('media_id_seq');
+    END IF;
+END $$;
