@@ -36,7 +36,7 @@
         .header h1 {
             font-size: 3rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 极速加速器
         }
         
         .nav {
@@ -50,7 +50,7 @@
         .nav a {
             background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 12px 24px;
+            padding: 12极速加速器
             text-decoration: none;
             border-radius: 25px;
             transition: all 0.3s ease;
@@ -109,7 +109,7 @@
             color: white;
             padding: 12px 24px;
             border: none;
-            border-radius: 25px;
+            border-radius: 25极速加速器
             cursor: pointer;
             font-size: 16px;
             transition: all 0.3s ease;
@@ -127,8 +127,12 @@
             background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
         }
         
-        .btn-warning {
+极速加速器
             background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
         }
         
         .btn-small {
@@ -158,7 +162,7 @@
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5极速加速器
         }
         
         .tv-header {
@@ -241,8 +245,8 @@
             padding: 30px;
             border-radius: 15px;
             width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
+            max-width: 800px;
+            max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
         }
@@ -257,6 +261,49 @@
         
         .close:hover {
             color: #fff;
+        }
+        
+        /* Episode Management Styles */
+        .episode-management {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .season-episodes {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+        
+        .episode-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 5px;
+        }
+        
+        .episode-input {
+            padding: 5px;
+            margin-right: 5px;
+            width: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        .add-episode-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
         }
         
         @media (max-width: 768px) {
@@ -291,6 +338,21 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+            
+            .add-episode-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .episode-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .episode-input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
         }
     </style>
 </head>
@@ -315,7 +377,7 @@
                 <form id="tv-form">
                     <div class="form-group">
                         <label for="tmdb_id">TMDB TV Series ID:</label>
-                        <input type="number" id="tmdb_id" name="tmdb_id" required>
+                        <极速加速器
                         <button type="button" id="fetch-tv-btn" class="btn" style="margin-top: 10px;">Fetch TV Details</button>
                     </div>
                     
@@ -330,7 +392,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="poster_url">Poster URL:</label>
+                        <label for极速加速器
                         <input type="url" id="poster_url" name="poster_url">
                     </div>
                     
@@ -341,7 +403,7 @@
                     
                     <div class="form-group">
                         <label for="language">Language:</label>
-                        <input type="text" id="language" name="language">
+                        <input type="text" id="language极速加速器
                     </div>
                     
                     <button type="submit" class="btn">Add TV Series</button>
@@ -352,13 +414,11 @@
                 <h3 style="color: #fff; margin-bottom: 20px;">Add Episodes</h3>
                 
                 <form id="episode-form">
-                    <div class="form-group">
+                    <div class极速加速器
                         <label for="tv_series_select">Select TV Series:</label>
-                        <select id="tv_series_select" name="tv_series_id" required>
+                        <select id="tv_series_select" name="tv_极速加速器
                             <option value="">Choose a TV series...</option>
-                            {% for tv in tv_series %}
-                            <option value="{{ tv.id }}">{{ tv.title }}</option>
-                            {% endfor %}
+                            <!-- TV series options will be populated by server -->
                         </select>
                     </div>
                     
@@ -384,52 +444,13 @@
             <div>
                 <h3 style="color: #fff; margin-bottom: 20px;">Existing TV Series</h3>
                 <div id="tv-list">
-                    {% for tv in tv_series %}
-                    <div class="tv-item" data-tv-id="{{ tv.id }}">
-                        <div class="tv-header">
-                            {% if tv.poster_url %}
-                            <img src="{{ tv.poster_url }}" alt="{{ tv.title }}" class="tv-poster">
-                            {% else %}
-                            <div class="tv-poster" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); display: flex; align-items: center; justify-content: center; font-size: 3rem;">📺</div>
-                            {% endif %}
-                            <div class="tv-info">
-                                <h4>{{ tv.title }}</h4>
-                                <p>Release Date: {{ tv.release_date }}</p>
-                                <p>Language: {{ tv.language }}</p>
-                                <p>Seasons: {{ tv.seasons|length }}</p>
-                            </div>
-                            <div class="tv-actions">
-                                <button class="btn btn-warning btn-small edit-tv-btn" data-tv-id="{{ tv.id }}">Edit</button>
-                                <button class="btn btn-danger btn-small delete-tv-btn" data-tv-id="{{ tv.id }}">Delete</button>
-                            </div>
-                        </div>
-                        
-                        {% if tv.seasons %}
-                        <div class="episodes-info">
-                            <h5>Episodes:</h5>
-                            {% for season in tv.seasons %}
-                            <div class="season-info">
-                                <strong>Season {{ season.season_number }}:</strong> {{ season.episodes|length }} episodes
-                                <div>
-                                    {% for episode in season.episodes %}
-                                    <div class="episode-item">
-                                        <span>Episode {{ episode.episode_number }}</span>
-                                        <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="{{ episode.id }}">Delete</button>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+                    <!-- TV series will be populated by server -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Edit TV Series Modal -->
+    <!-- Edit TV Series Modal with Episode Management -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -453,7 +474,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="edit-release-date">Release Date:</label>
+                    <label for="edit-release-date">Release Date:</极速加速器
                     <input type="date" id="edit-release-date" name="release_date">
                 </div>
                 
@@ -462,7 +483,28 @@
                     <input type="text" id="edit-language" name="language">
                 </div>
                 
-                <button type="submit" class="btn">Update TV Series</button>
+                <!-- Episode Management Section -->
+                <div class="episode-management">
+                    <h4 style="color: #fff; margin-bottom: 15px;">Episode Management</h4>
+                    <div id="episodes-container">
+                        <p style="color: #ccc; text-align: center;">Loading episodes...</p>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <h5 style="color: #fff; margin-bottom: 10px;">Add New Episode</h5>
+                        <div class="add-episode-form">
+                            <input type="number" id="new-season-number" placeholder="Season Number" min="1" class="episode-input">
+                            <input type="number" id="new-episode-number" placeholder="Episode Number" min="1" class="episode-input">
+                            <input type="url" id="new-video-url" placeholder="720p Video URL" class="episode-input">
+                            <button type="button" class="btn btn-success btn-small" id="add-episode-btn">Add Episode</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 25px;">
+                    <button type="button" class="btn btn-danger" id="delete-series-btn">Delete Series</button>
+                    <button type="submit" class="btn">Update Series</button>
+                </div>
             </form>
         </div>
     </div>
@@ -521,7 +563,7 @@
                 showAlert(result.error || 'Error adding TV series', 'error');
             }
         } catch (error) {
-            showAlert('Error adding TV series', 'error');
+            showAlert('极速加速器
         }
     });
 
@@ -560,6 +602,7 @@
     // Modal functionality
     const modal = document.getElementById('editModal');
     const closeBtn = document.querySelector('.close');
+    let currentTvId = null;
 
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('edit-tv-btn')) {
@@ -575,6 +618,21 @@
         if (e.target.classList.contains('delete-episode-btn')) {
             const episodeId = e.target.getAttribute('data-episode-id');
             deleteEpisode(episodeId);
+        }
+        
+        if (e.target.classList.contains('update-episode-btn')) {
+            const episodeId = e.target.getAttribute('data-episode-id');
+            const videoUrl = document.querySelector(`input[data-episode-id="${episodeId}"]`).value;
+            updateEpisode(episodeId, videoUrl);
+        }
+        
+        if (e.target.id === 'add-episode-btn') {
+            addEpisode();
+        }
+        
+        if (e.target.id === 'delete-series-btn') {
+            const tvId = document.getElementById('edit-tv-id').value;
+            deleteTVSeries(tvId);
         }
     });
 
@@ -601,6 +659,9 @@
                 document.getElementById('edit-release-date').value = tv.release_date;
                 document.getElementById('edit-language').value = tv.language;
                 
+                currentTvId = tvId;
+                loadTVEpisodes(tvId);
+                
                 modal.style.display = 'block';
             }
         } catch (error) {
@@ -608,11 +669,138 @@
         }
     }
 
+    // Load TV episodes for editing
+    async function loadTVEpisodes(tvId) {
+        try {
+            const response = await fetch(`/api/admin/tv-series/${tvId}/episodes`);
+            if (response.ok) {
+                const episodesData = await response.json();
+                renderEpisodesUI(episodesData);
+            } else {
+                console.error('Failed to load episodes');
+                document.getElementById('episodes-container').innerHTML = '<p style="color: #ccc;">Error loading episodes</p>';
+            }
+        } catch (error) {
+            console.error('Error loading episodes:', error);
+            document.getElementById('episodes-container').innerHTML = '<p style="color: #ccc;">Error loading episodes</p>';
+        }
+    }
+
+    // Render episodes UI in the modal
+    function renderEpisodesUI(episodesData) {
+        const episodesContainer = document.getElementById('episodes-container');
+        
+        // Group episodes by season
+        const seasons = {};
+        episodesData.forEach(episode => {
+            if (!seasons[episode.season_number]) {
+                seasons[episode.season_number] = [];
+            }
+            seasons[episode.season_number].push(episode);
+        });
+        
+        let html = '';
+        
+        if (Object.keys(seasons).length === 0) {
+            html = '<p style="color: #ccc; text-align: center;">No episodes found. Add episodes using the form below.</p>';
+        } else {
+            // Create UI for each season
+            Object.keys(seasons).sort().forEach(seasonNum => {
+                html += `
+                    <div class="season-episodes">
+                        <h5 style="color: #fff; margin-bottom: 10px;">Season ${seasonNum}</h5>
+                `;
+                
+                seasons[seasonNum].forEach(episode => {
+                    html += `
+                        <div class="episode-row">
+                            <span style="color: #ccc;">Episode ${episode.episode_number}</span>
+                            <div>
+                                <input type="url" value="${episode.video_720p || ''}" placeholder="720p Video URL" 
+                                    data-episode-id="${episode.id}" class="episode-input">
+                                <button class="btn btn-small update-episode-btn" data-episode-id="${episode.id}" style="margin-right: 5px;">Update</button>
+                                <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="${episode.id}">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            });
+        }
+        
+        episodesContainer.innerHTML = html;
+    }
+
+    // Update episode
+    async function updateEpisode(episodeId, videoUrl) {
+        try {
+            const response = await fetch(`/api/admin/episodes/${episodeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ video_720p: videoUrl })
+            });
+            
+            if (response.ok) {
+                showAlert('Episode updated successfully!', 'success');
+            } else {
+                const error = await response.json();
+                showAlert(error.error || 'Error updating episode', 'error');
+            }
+        } catch (error) {
+            showAlert('Error updating episode', 'error');
+        }
+    }
+
+    // Add new episode from modal
+    async function addEpisode() {
+        const seasonNumber = document.getElementById('new-season-number').value;
+        const episodeNumber = document.getElementById('new-episode-number').value;
+        const videoUrl = document.getElementById('new-video-url').value;
+        
+        if (!seasonNumber || !episodeNumber || !videoUrl) {
+            showAlert('Please fill all fields for the new episode', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/admin/tv-series/${currentTvId}/极速加速器
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    season_number: parseInt(seasonNumber),
+                    episode_number: parseInt(episodeNumber),
+                    video_720p: videoUrl
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showAlert('Episode added successfully!', 'success');
+                // Clear form
+                document.getElementById('new-season-number').value = '';
+                document.getElementById('new-episode-number').value = '';
+                document.getElementById('new-video-url').value = '';
+                // Refresh episodes list
+                loadTVEpisodes(currentTvId);
+            } else {
+                showAlert(result.error || 'Error adding episode', 'error');
+            }
+        } catch (error) {
+            showAlert('Error adding episode', 'error');
+        }
+    }
+
     // Update TV series
     document.getElementById('edit-tv-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const tvId = document.getElementById('edit-tv-id').value;
+        const tvId = document.getElementById('edit-t极速加速器
         const formData = new FormData(this);
         const tvData = Object.fromEntries(formData.entries());
         
@@ -657,6 +845,7 @@
             
             if (response.ok) {
                 showAlert('TV series deleted successfully!', 'success');
+                modal.style.display = 'none';
                 setTimeout(() => location.reload(), 1500);
             } else {
                 showAlert(result.error || 'Error deleting TV series', 'error');
@@ -684,7 +873,12 @@
             
             if (response.ok) {
                 showAlert('Episode deleted successfully!', 'success');
-                setTimeout(() => location.reload(), 1500);
+                // If we're in the edit modal, refresh the episodes list
+                if (currentTvId) {
+                    loadTVEpisodes(currentTvId);
+                } else {
+                    setTimeout(() => location.reload(), 1500);
+                }
             } else {
                 showAlert(result.error || 'Error deleting episode', 'error');
             }
