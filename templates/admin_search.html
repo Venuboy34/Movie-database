@@ -135,6 +135,10 @@
             font-size: 14px;
         }
         
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
         .results-section {
             margin-top: 30px;
         }
@@ -217,7 +221,7 @@
             border-radius: 15px;
             width: 90%;
             max-width: 800px;
-            max-height: 80vh;
+            max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
         }
@@ -347,6 +351,14 @@
             grid-template-columns: 1fr 1fr 2fr auto;
             gap: 10px;
             align-items: center;
+            margin-top: 15px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
         
         @media (max-width: 768px) {
@@ -379,6 +391,17 @@
             
             .add-episode-form {
                 grid-template-columns: 1fr;
+            }
+            
+            .episode-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .episode-input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
             }
         }
     </style>
@@ -421,7 +444,7 @@
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h3 style="color: #fff; margin-bottom: 20px;" id="modal-title">Edit Media</h3>
+            <h3 style="color: #fff; margin-bottom: 20px;" id="modal-title">Edit TV Series</h3>
             <form id="edit-form">
                 <input type="hidden" id="edit-id">
                 <input type="hidden" id="edit-type">
@@ -451,22 +474,14 @@
                     <input type="text" id="edit-language" name="language">
                 </div>
                 
-                <div id="movie-fields" style="display: none;">
-                    <div class="form-group">
-                        <label for="edit-video-720p">720p Video Link:</label>
-                        <input type="url" id="edit-video-720p" name="video_720p">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-video-1080p">1080p Video Link:</label>
-                        <input type="url" id="edit-video-1080p" name="video_1080p">
-                    </div>
-                </div>
-                
                 <!-- TV Episodes Section -->
-                <div id="tv-episodes-section" class="tv-episodes-section" style="display: none;">
-                    <h4 style="color: #fff; margin-bottom: 15px;">Episodes Management</h4>
-                    <div id="episodes-container"></div>
+                <div id="tv-episodes-section" class="tv-episodes-section">
+                    <div class="section-header">
+                        <h4 style="color: #fff; margin: 0;">Episodes Management</h4>
+                    </div>
+                    <div id="episodes-container">
+                        <p style="color: #ccc; text-align: center;">Loading episodes...</p>
+                    </div>
                     
                     <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
                         <h5 style="color: #fff; margin-bottom: 10px;">Add New Episode</h5>
@@ -474,12 +489,15 @@
                             <input type="number" id="new-season-number" placeholder="Season Number" min="1" class="episode-input">
                             <input type="number" id="new-episode-number" placeholder="Episode Number" min="1" class="episode-input">
                             <input type="url" id="new-video-url" placeholder="720p Video URL" class="episode-input">
-                            <button type="button" class="btn btn-small" id="add-episode-btn">Add Episode</button>
+                            <button type="button" class="btn btn-success btn-small" id="add-episode-btn">Add Episode</button>
                         </div>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn">Update</button>
+                <div style="display: flex; justify-content: space-between; margin-top: 25px;">
+                    <button type="button" class="btn btn-danger" id="delete-media-btn">Delete Series</button>
+                    <button type="submit" class="btn">Update Series</button>
+                </div>
             </form>
         </div>
     </div>
@@ -626,6 +644,12 @@
         if (e.target.id === 'add-episode-btn') {
             addEpisode();
         }
+        
+        if (e.target.id === 'delete-media-btn') {
+            const id = document.getElementById('edit-id').value;
+            const type = document.getElementById('edit-type').value;
+            deleteMedia(id, type);
+        }
     });
 
     closeBtn.addEventListener('click', function() {
@@ -653,21 +677,15 @@
                 document.getElementById('edit-release-date').value = media.release_date || '';
                 document.getElementById('edit-language').value = media.language || '';
                 
-                const movieFields = document.getElementById('movie-fields');
-                const tvEpisodesSection = document.getElementById('tv-episodes-section');
                 const modalTitle = document.getElementById('modal-title');
                 
                 if (type === 'movie') {
-                    movieFields.style.display = 'block';
-                    tvEpisodesSection.style.display = 'none';
-                    const videoLinks = media.video_links || {};
-                    document.getElementById('edit-video-720p').value = videoLinks['720p'] || media.video_720p || '';
-                    document.getElementById('edit-video-1080p').value = videoLinks['1080p'] || media.video_1080p || '';
                     modalTitle.textContent = 'Edit Movie';
+                    // For movies, we might want to hide the episodes section
+                    document.getElementById('tv-episodes-section').style.display = 'none';
                 } else {
-                    movieFields.style.display = 'none';
-                    tvEpisodesSection.style.display = 'block';
                     modalTitle.textContent = 'Edit TV Series';
+                    document.getElementById('tv-episodes-section').style.display = 'block';
                     currentTvId = id;
                     loadTVEpisodes(id);
                 }
@@ -716,30 +734,34 @@
         
         let html = '';
         
-        // Create UI for each season
-        Object.keys(seasons).sort().forEach(seasonNum => {
-            html += `
-                <div class="season-section">
-                    <h5 style="color: #fff; margin-bottom: 10px;">Season ${seasonNum}</h5>
-            `;
-            
-            seasons[seasonNum].forEach(episode => {
+        if (Object.keys(seasons).length === 0) {
+            html = '<p style="color: #ccc; text-align: center;">No episodes found. Add episodes using the form below.</p>';
+        } else {
+            // Create UI for each season
+            Object.keys(seasons).sort().forEach(seasonNum => {
                 html += `
-                    <div class="episode-item">
-                        <span style="color: #ccc;">Episode ${episode.episode_number}</span>
-                        <div>
-                            <input type="url" value="${episode.video_720p || ''}" placeholder="720p Video URL" 
-                                data-episode-id="${episode.id}" data-field="video_720p" 
-                                class="episode-input">
-                            <button class="btn btn-small update-episode-btn" data-episode-id="${episode.id}" style="margin-right: 5px;">Update</button>
-                            <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="${episode.id}">Delete</button>
-                        </div>
-                    </div>
+                    <div class="season-section">
+                        <h5 style="color: #fff; margin-bottom: 10px;">Season ${seasonNum}</h5>
                 `;
+                
+                seasons[seasonNum].forEach(episode => {
+                    html += `
+                        <div class="episode-item">
+                            <span style="color: #ccc;">Episode ${episode.episode_number}</span>
+                            <div>
+                                <input type="url" value="${episode.video_720p || ''}" placeholder="720p Video URL" 
+                                    data-episode-id="${episode.id}" data-field="video_720p" 
+                                    class="episode-input">
+                                <button class="btn btn-small update-episode-btn" data-episode-id="${episode.id}" style="margin-right: 5px;">Update</button>
+                                <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="${episode.id}">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
             });
-            
-            html += `</div>`;
-        });
+        }
         
         episodesContainer.innerHTML = html;
     }
@@ -895,6 +917,7 @@
             
             if (response.ok) {
                 showAlert(result.message || `${mediaType} deleted successfully!`, 'success');
+                modal.style.display = 'none';
                 // Refresh current results
                 if (searchInput.value.trim()) {
                     performSearch();
