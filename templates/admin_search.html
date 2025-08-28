@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search & Edit - Admin Panel</title>
+    <title>Edit TV Series - Admin Panel</title>
     <style>
         * {
             margin: 0;
@@ -16,55 +16,12 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             color: #fff;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
             padding: 20px;
         }
         
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 30px;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .nav {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .nav a {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-        }
-        
-        .nav a:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .content {
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
             background: rgba(255, 255, 255, 0.1);
             padding: 30px;
             border-radius: 20px;
@@ -72,170 +29,42 @@
             backdrop-filter: blur(10px);
         }
         
-        .search-section {
-            margin-bottom: 40px;
-        }
-        
-        .search-box {
-            display: flex;
-            gap: 15px;
+        .header {
+            text-align: center;
             margin-bottom: 30px;
-            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .search-box input {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
-        
-        .search-box input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .search-box input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn {
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin-right: 10px;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        .form-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
         }
         
-        .btn-danger {
-            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        @media (max-width: 768px) {
+            .form-container {
+                grid-template-columns: 1fr;
+            }
         }
         
-        .btn-warning {
-            background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
+        .form-section {
+            margin-bottom: 25px;
         }
         
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-        }
-        
-        .results-section {
-            margin-top: 30px;
-        }
-        
-        .media-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 10px;
+        .form-section h3 {
+            color: #fff;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .media-poster {
-            width: 80px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-        
-        .media-info {
-            flex: 1;
-        }
-        
-        .media-info h4 {
-            color: #fff;
-            margin-bottom: 5px;
-            font-size: 1.2rem;
-        }
-        
-        .media-info p {
-            color: #ccc;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-        
-        .media-type {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-right: 10px;
-        }
-        
-        .duplicate-badge {
-            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 500;
-        }
-        
-        .media-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-        }
-        
-        .modal-content {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-        }
-        
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .close:hover {
-            color: #fff;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
         }
         
         .form-group {
@@ -261,11 +90,6 @@
             color: #fff;
         }
         
-        .form-group input::placeholder,
-        .form-group textarea::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
@@ -273,47 +97,44 @@
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
         }
         
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        
-        .alert-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-        }
-        
-        .alert-error {
-            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-            color: white;
-        }
-
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #fff;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
             display: inline-block;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
-        /* TV Episodes Section */
-        .tv-episodes-section {
-            margin-top: 20px;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
+        /* Episodes Section */
+        .episodes-section {
+            margin-top: 30px;
             padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
@@ -361,34 +182,40 @@
             margin-bottom: 15px;
         }
         
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .alert-error {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .nav {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .media-item {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .media-actions {
-                flex-direction: row;
-                justify-content: center;
-            }
-            
-            .search-box {
-                flex-direction: column;
-            }
-            
             .add-episode-form {
                 grid-template-columns: 1fr;
             }
@@ -409,97 +236,117 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Search & Edit Media</h1>
-            <div class="nav">
-                <a href="/">Home</a>
-                <a href="/admin">Admin Panel</a>
-                <a href="/media">Public API</a>
-                <a href="/api/docs">API Docs</a>
-            </div>
+            <h1>Edit TV Series</h1>
         </div>
         
-        <div class="content">
-            <div id="alert-container"></div>
+        <div id="alert-container"></div>
+        
+        <form id="edit-form">
+            <input type="hidden" id="edit-id" value="123">
             
-            <div class="search-section">
-                <h3 style="color: #fff; margin-bottom: 20px;">Search Movies & TV Series</h3>
-                
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search by title, description, or language..." />
-                    <button id="search-btn" class="btn">Search</button>
-                    <button id="show-all-btn" class="btn">Show All</button>
-                </div>
-            </div>
-            
-            <div class="results-section">
-                <h3 style="color: #fff; margin-bottom: 20px;">Results</h3>
-                <div id="results-container">
-                    <p style="color: #ccc; text-align: center;">Use search above to find movies and TV series</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3 style="color: #fff; margin-bottom: 20px;" id="modal-title">Edit TV Series</h3>
-            <form id="edit-form">
-                <input type="hidden" id="edit-id">
-                <input type="hidden" id="edit-type">
-                
-                <div class="form-group">
-                    <label for="edit-title">Title:</label>
-                    <input type="text" id="edit-title" name="title" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit-description">Description:</label>
-                    <textarea id="edit-description" name="description" rows="4"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit-poster-url">Poster URL:</label>
-                    <input type="url" id="edit-poster-url" name="poster_url">
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit-release-date">Release Date:</label>
-                    <input type="date" id="edit-release-date" name="release_date">
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit-language">Language:</label>
-                    <input type="text" id="edit-language" name="language">
-                </div>
-                
-                <!-- TV Episodes Section -->
-                <div id="tv-episodes-section" class="tv-episodes-section">
-                    <div class="section-header">
-                        <h4 style="color: #fff; margin: 0;">Episodes Management</h4>
-                    </div>
-                    <div id="episodes-container">
-                        <p style="color: #ccc; text-align: center;">Loading episodes...</p>
-                    </div>
-                    
-                    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <h5 style="color: #fff; margin-bottom: 10px;">Add New Episode</h5>
-                        <div class="add-episode-form">
-                            <input type="number" id="new-season-number" placeholder="Season Number" min="1" class="episode-input">
-                            <input type="number" id="new-episode-number" placeholder="Episode Number" min="1" class="episode-input">
-                            <input type="url" id="new-video-url" placeholder="720p Video URL" class="episode-input">
-                            <button type="button" class="btn btn-success btn-small" id="add-episode-btn">Add Episode</button>
+            <div class="form-container">
+                <div>
+                    <div class="form-section">
+                        <h3>Series Information</h3>
+                        
+                        <div class="form-group">
+                            <label for="edit-title">Title:</label>
+                            <input type="text" id="edit-title" name="title" value="Iron heart" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-description">Description:</label>
+                            <textarea id="edit-description" name="description" rows="4">After the events of Black Panther: Wakanda Forever, technology is pitted against magic when Riri Williams, a young, genius inventor</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-poster-url">Poster URL:</label>
+                            <input type="url" id="edit-poster-url" name="poster_url" value="https://image.imdb.org/Up/wS0i0AmzGVKUspraNAXxPVJRGNRZUl.jpg">
                         </div>
                     </div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; margin-top: 25px;">
-                    <button type="button" class="btn btn-danger" id="delete-media-btn">Delete Series</button>
-                    <button type="submit" class="btn">Update Series</button>
+                <div>
+                    <div class="form-section">
+                        <h3>Additional Details</h3>
+                        
+                        <div class="form-group">
+                            <label for="edit-release-date">Release Date:</label>
+                            <input type="date" id="edit-release-date" name="release_date" value="2025-06-24">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-language">Language:</label>
+                            <input type="text" id="edit-language" name="language" value="English">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-tmdb-id">TMDB ID:</label>
+                            <input type="number" id="edit-tmdb-id" name="tmdb_id" placeholder="Optional TMDB ID">
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+            
+            <!-- Episodes Section -->
+            <div class="episodes-section">
+                <div class="section-header">
+                    <h3>Episodes Management</h3>
+                </div>
+                
+                <div id="episodes-container">
+                    <div class="season-section">
+                        <h4>Season 1</h4>
+                        
+                        <div class="episode-item">
+                            <span>Episode 1</span>
+                            <div>
+                                <input type="url" value="https://example.com/video1.mp4" placeholder="720p Video URL" class="episode-input">
+                                <button class="btn btn-small update-episode-btn" data-episode-id="1">Update</button>
+                                <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="1">Delete</button>
+                            </div>
+                        </div>
+                        
+                        <div class="episode-item">
+                            <span>Episode 2</span>
+                            <div>
+                                <input type="url" value="https://example.com/video2.mp4" placeholder="720p Video URL" class="episode-input">
+                                <button class="btn btn-small update-episode-btn" data-episode-id="2">Update</button>
+                                <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="2">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="season-section">
+                        <h4>Season 2</h4>
+                        
+                        <div class="episode-item">
+                            <span>Episode 1</span>
+                            <div>
+                                <input type="url" value="" placeholder="720p Video URL" class="episode-input">
+                                <button class="btn btn-small update-episode-btn" data-episode-id="3">Update</button>
+                                <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="3">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <h4>Add New Episode</h4>
+                    <div class="add-episode-form">
+                        <input type="number" id="new-season-number" placeholder="Season Number" min="1" class="episode-input">
+                        <input type="number" id="new-episode-number" placeholder="Episode Number" min="1" class="episode-input">
+                        <input type="url" id="new-video-url" placeholder="720p Video URL" class="episode-input">
+                        <button type="button" class="btn btn-success btn-small" id="add-episode-btn">Add Episode</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                <button type="button" class="btn btn-danger" id="delete-series-btn">Delete Series</button>
+                <button type="submit" class="btn">Update Series</button>
+            </div>
+        </form>
     </div>
 
     <script>
@@ -509,219 +356,63 @@
         'Content-Type': 'application/json'
     };
 
-    const modal = document.getElementById('editModal');
-    const closeBtn = document.querySelector('.close');
-    const searchInput = document.getElementById('search-input');
-    const searchBtn = document.getElementById('search-btn');
-    const showAllBtn = document.getElementById('show-all-btn');
-    const resultsContainer = document.getElementById('results-container');
-    let currentTvId = null;
+    let currentSeriesId = null;
 
-    // Search functionality
-    searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            performSearch();
-        }
+    // Load series data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get series ID from URL or other source
+        const urlParams = new URLSearchParams(window.location.search);
+        currentSeriesId = urlParams.get('id') || document.getElementById('edit-id').value;
+        
+        loadSeriesData(currentSeriesId);
+        loadEpisodes(currentSeriesId);
     });
 
-    showAllBtn.addEventListener('click', showAllMedia);
-
-    async function performSearch() {
-        const query = searchInput.value.trim();
-        if (!query) {
-            showAlert('Please enter a search term', 'error');
-            return;
-        }
-
-        resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;"><span class="spinner"></span>Searching...</p>';
-
+    // Load series data
+    async function loadSeriesData(seriesId) {
         try {
-            const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`/api/admin/tv-series/${seriesId}`);
             if (response.ok) {
-                const data = await response.json();
-                displayResults(data.results || data.data || [], `Search results for "${query}" (${data.total_results || data.results?.length || 0} found)`);
+                const seriesData = await response.json();
+                populateForm(seriesData);
             } else {
-                const error = await response.json();
-                showAlert(error.message || 'Error performing search', 'error');
-                resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error performing search</p>';
+                showAlert('Error loading series data', 'error');
             }
         } catch (error) {
-            console.error('Error performing search:', error);
-            showAlert('Error performing search', 'error');
-            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error performing search</p>';
+            console.error('Error loading series data:', error);
+            showAlert('Error loading series data', 'error');
         }
     }
 
-    async function showAllMedia() {
-        resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;"><span class="spinner"></span>Loading all media...</p>';
+    // Populate form with series data
+    function populateForm(seriesData) {
+        document.getElementById('edit-title').value = seriesData.title || '';
+        document.getElementById('edit-description').value = seriesData.description || '';
+        document.getElementById('edit-poster-url').value = seriesData.poster_url || '';
+        document.getElementById('edit-release-date').value = seriesData.release_date || '';
+        document.getElementById('edit-language').value = seriesData.language || '';
+        document.getElementById('edit-tmdb-id').value = seriesData.tmdb_id || '';
+    }
 
+    // Load episodes for the series
+    async function loadEpisodes(seriesId) {
         try {
-            const response = await fetch('/media');
-            if (response.ok) {
-                const data = await response.json();
-                const mediaList = data.data || data;
-                displayResults(mediaList, `All Media (${mediaList.length} items)`);
-            } else {
-                const error = await response.json();
-                showAlert(error.message || 'Error loading media', 'error');
-                resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error loading media</p>';
-            }
-        } catch (error) {
-            console.error('Error loading media:', error);
-            showAlert('Error loading media', 'error');
-            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error loading media</p>';
-        }
-    }
-
-    function displayResults(results, title) {
-        if (!results || results.length === 0) {
-            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">No results found</p>';
-            return;
-        }
-
-        let html = `<h4 style="color: #fff; margin-bottom: 20px;">${title}</h4>`;
-        
-        results.forEach(item => {
-            // Handle both API response formats
-            const videoLinks = item.video_links || {
-                '720p': item.video_720p,
-                '1080p': item.video_1080p
-            };
-            
-            html += `
-                <div class="media-item">
-                    ${item.poster_url ? `<img src="${item.poster_url}" alt="${item.title}" class="media-poster">` : 
-                      `<div class="media-poster" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem;">${item.type === 'movie' ? '🎬' : '📺'}</div>`}
-                    <div class="media-info">
-                        <h4>${item.title}</h4>
-                        <div style="margin-bottom: 10px;">
-                            <span class="media-type">${item.type.toUpperCase()}</span>
-                            ${item.tmdb_id ? `<span class="duplicate-badge">TMDB: ${item.tmdb_id}</span>` : ''}
-                        </div>
-                        <p><strong>Release:</strong> ${item.release_date || 'N/A'}</p>
-                        <p><strong>Language:</strong> ${item.language || 'N/A'}</p>
-                        <p><strong>Description:</strong> ${item.description ? item.description.substring(0, 100) + '...' : 'No description'}</p>
-                        ${item.type === 'tv' ? `<p><strong>Seasons:</strong> ${item.total_seasons || 0}</p>` : ''}
-                        ${item.type === 'movie' && videoLinks ? `<p><strong>Videos:</strong> ${videoLinks['720p'] ? '720p ' : ''}${videoLinks['1080p'] ? '1080p' : ''}</p>` : ''}
-                    </div>
-                    <div class="media-actions">
-                        <button class="btn btn-warning btn-small edit-btn" data-id="${item.id}" data-type="${item.type}">Edit</button>
-                        <button class="btn btn-danger btn-small delete-btn" data-id="${item.id}" data-type="${item.type}">Delete</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        resultsContainer.innerHTML = html;
-    }
-
-    // Modal functionality
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('edit-btn')) {
-            const id = e.target.getAttribute('data-id');
-            const type = e.target.getAttribute('data-type');
-            openEditModal(id, type);
-        }
-        
-        if (e.target.classList.contains('delete-btn')) {
-            const id = e.target.getAttribute('data-id');
-            const type = e.target.getAttribute('data-type');
-            deleteMedia(id, type);
-        }
-        
-        if (e.target.classList.contains('update-episode-btn')) {
-            const episodeId = e.target.getAttribute('data-episode-id');
-            const videoUrl = document.querySelector(`input[data-episode-id="${episodeId}"][data-field="video_720p"]`).value;
-            updateEpisode(episodeId, videoUrl);
-        }
-        
-        if (e.target.classList.contains('delete-episode-btn')) {
-            const episodeId = e.target.getAttribute('data-episode-id');
-            deleteEpisode(episodeId);
-        }
-        
-        if (e.target.id === 'add-episode-btn') {
-            addEpisode();
-        }
-        
-        if (e.target.id === 'delete-media-btn') {
-            const id = document.getElementById('edit-id').value;
-            const type = document.getElementById('edit-type').value;
-            deleteMedia(id, type);
-        }
-    });
-
-    closeBtn.addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-
-    window.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    async function openEditModal(id, type) {
-        try {
-            const response = await fetch(`/media/${id}`);
-            if (response.ok) {
-                const result = await response.json();
-                const media = result.data || result;
-                
-                document.getElementById('edit-id').value = id;
-                document.getElementById('edit-type').value = type;
-                document.getElementById('edit-title').value = media.title || '';
-                document.getElementById('edit-description').value = media.description || '';
-                document.getElementById('edit-poster-url').value = media.poster_url || '';
-                document.getElementById('edit-release-date').value = media.release_date || '';
-                document.getElementById('edit-language').value = media.language || '';
-                
-                const modalTitle = document.getElementById('modal-title');
-                
-                if (type === 'movie') {
-                    modalTitle.textContent = 'Edit Movie';
-                    // For movies, we might want to hide the episodes section
-                    document.getElementById('tv-episodes-section').style.display = 'none';
-                } else {
-                    modalTitle.textContent = 'Edit TV Series';
-                    document.getElementById('tv-episodes-section').style.display = 'block';
-                    currentTvId = id;
-                    loadTVEpisodes(id);
-                }
-                
-                modal.style.display = 'block';
-            } else {
-                const error = await response.json();
-                showAlert(error.message || 'Error loading media details', 'error');
-            }
-        } catch (error) {
-            console.error('Error loading media details:', error);
-            showAlert('Error loading media details', 'error');
-        }
-    }
-
-    // Load TV episodes for editing
-    async function loadTVEpisodes(tvId) {
-        try {
-            const response = await fetch(`/api/admin/tv-series/${tvId}/episodes`);
+            const response = await fetch(`/api/admin/tv-series/${seriesId}/episodes`);
             if (response.ok) {
                 const episodesData = await response.json();
-                renderEpisodesUI(episodesData);
+                renderEpisodes(episodesData);
             } else {
-                console.error('Failed to load episodes');
-                document.getElementById('episodes-container').innerHTML = '<p style="color: #ccc;">Error loading episodes</p>';
+                showAlert('Error loading episodes', 'error');
             }
         } catch (error) {
             console.error('Error loading episodes:', error);
-            document.getElementById('episodes-container').innerHTML = '<p style="color: #ccc;">Error loading episodes</p>';
+            showAlert('Error loading episodes', 'error');
         }
     }
 
-    // Render episodes UI in the modal
-    function renderEpisodesUI(episodesData) {
+    // Render episodes in the UI
+    function renderEpisodes(episodesData) {
         const episodesContainer = document.getElementById('episodes-container');
-        if (!episodesContainer) return;
         
         // Group episodes by season
         const seasons = {};
@@ -734,37 +425,129 @@
         
         let html = '';
         
-        if (Object.keys(seasons).length === 0) {
-            html = '<p style="color: #ccc; text-align: center;">No episodes found. Add episodes using the form below.</p>';
-        } else {
-            // Create UI for each season
-            Object.keys(seasons).sort().forEach(seasonNum => {
+        // Create UI for each season
+        Object.keys(seasons).sort().forEach(seasonNum => {
+            html += `
+                <div class="season-section">
+                    <h4>Season ${seasonNum}</h4>
+            `;
+            
+            seasons[seasonNum].forEach(episode => {
                 html += `
-                    <div class="season-section">
-                        <h5 style="color: #fff; margin-bottom: 10px;">Season ${seasonNum}</h5>
-                `;
-                
-                seasons[seasonNum].forEach(episode => {
-                    html += `
-                        <div class="episode-item">
-                            <span style="color: #ccc;">Episode ${episode.episode_number}</span>
-                            <div>
-                                <input type="url" value="${episode.video_720p || ''}" placeholder="720p Video URL" 
-                                    data-episode-id="${episode.id}" data-field="video_720p" 
-                                    class="episode-input">
-                                <button class="btn btn-small update-episode-btn" data-episode-id="${episode.id}" style="margin-right: 5px;">Update</button>
-                                <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="${episode.id}">Delete</button>
-                            </div>
+                    <div class="episode-item">
+                        <span>Episode ${episode.episode_number}</span>
+                        <div>
+                            <input type="url" value="${episode.video_720p || ''}" placeholder="720p Video URL" 
+                                data-episode-id="${episode.id}" class="episode-input">
+                            <button class="btn btn-small update-episode-btn" data-episode-id="${episode.id}">Update</button>
+                            <button class="btn btn-danger btn-small delete-episode-btn" data-episode-id="${episode.id}">Delete</button>
                         </div>
-                    `;
-                });
-                
-                html += `</div>`;
+                    </div>
+                `;
             });
-        }
+            
+            html += `</div>`;
+        });
         
         episodesContainer.innerHTML = html;
+        
+        // Add event listeners to the new buttons
+        document.querySelectorAll('.update-episode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const episodeId = this.getAttribute('data-episode-id');
+                const videoUrl = document.querySelector(`.episode-input[data-episode-id="${episodeId}"]`).value;
+                updateEpisode(episodeId, videoUrl);
+            });
+        });
+        
+        document.querySelectorAll('.delete-episode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const episodeId = this.getAttribute('data-episode-id');
+                deleteEpisode(episodeId);
+            });
+        });
     }
+
+    // Update series
+    document.getElementById('edit-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const seriesData = Object.fromEntries(formData.entries());
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.innerHTML = '<span class="spinner"></span>Updating...';
+        submitBtn.disabled = true;
+        
+        try {
+            const response = await fetch(`/api/admin/tv-series/${currentSeriesId}`, {
+                method: 'PUT',
+                headers: authHeaders,
+                body: JSON.stringify(seriesData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showAlert('Series updated successfully!', 'success');
+            } else {
+                showAlert(result.message || result.error || 'Error updating series', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating series:', error);
+            showAlert('Error updating series', 'error');
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Add new episode
+    document.getElementById('add-episode-btn').addEventListener('click', async function() {
+        const seasonNumber = document.getElementById('new-season-number').value;
+        const episodeNumber = document.getElementById('new-episode-number').value;
+        const videoUrl = document.getElementById('new-video-url').value;
+        
+        if (!seasonNumber || !episodeNumber || !videoUrl) {
+            showAlert('Please fill all fields for the new episode', 'error');
+            return;
+        }
+        
+        this.innerHTML = '<span class="spinner"></span>Adding...';
+        this.disabled = true;
+        
+        try {
+            const response = await fetch(`/api/admin/tv-series/${currentSeriesId}/episodes`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({
+                    season_number: parseInt(seasonNumber),
+                    episode_number: parseInt(episodeNumber),
+                    video_720p: videoUrl
+                })
+            });
+            
+            if (response.ok) {
+                showAlert('Episode added successfully!', 'success');
+                // Clear form
+                document.getElementById('new-season-number').value = '';
+                document.getElementById('new-episode-number').value = '';
+                document.getElementById('new-video-url').value = '';
+                // Refresh episodes list
+                loadEpisodes(currentSeriesId);
+            } else {
+                const error = await response.json();
+                showAlert(error.message || 'Error adding episode', 'error');
+            }
+        } catch (error) {
+            console.error('Error adding episode:', error);
+            showAlert('Error adding episode', 'error');
+        } finally {
+            this.innerHTML = 'Add Episode';
+            this.disabled = false;
+        }
+    });
 
     // Update episode
     async function updateEpisode(episodeId, videoUrl) {
@@ -801,7 +584,8 @@
             
             if (response.ok) {
                 showAlert('Episode deleted successfully!', 'success');
-                loadTVEpisodes(currentTvId); // Refresh episodes list
+                // Refresh episodes list
+                loadEpisodes(currentSeriesId);
             } else {
                 const error = await response.json();
                 showAlert(error.message || 'Error deleting episode', 'error');
@@ -812,126 +596,32 @@
         }
     }
 
-    // Add new episode
-    async function addEpisode() {
-        const seasonNumber = document.getElementById('new-season-number').value;
-        const episodeNumber = document.getElementById('new-episode-number').value;
-        const videoUrl = document.getElementById('new-video-url').value;
-        
-        if (!seasonNumber || !episodeNumber || !videoUrl) {
-            showAlert('Please fill all fields for the new episode', 'error');
+    // Delete series
+    document.getElementById('delete-series-btn').addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to delete this series? This will also delete all episodes.')) {
             return;
         }
         
         try {
-            const response = await fetch(`/api/admin/tv-series/${currentTvId}/episodes`, {
-                method: 'POST',
-                headers: authHeaders,
-                body: JSON.stringify({
-                    season_number: parseInt(seasonNumber),
-                    episode_number: parseInt(episodeNumber),
-                    video_720p: videoUrl
-                })
-            });
-            
-            if (response.ok) {
-                showAlert('Episode added successfully!', 'success');
-                // Clear form
-                document.getElementById('new-season-number').value = '';
-                document.getElementById('new-episode-number').value = '';
-                document.getElementById('new-video-url').value = '';
-                // Refresh episodes list
-                loadTVEpisodes(currentTvId);
-            } else {
-                const error = await response.json();
-                showAlert(error.message || 'Error adding episode', 'error');
-            }
-        } catch (error) {
-            console.error('Error adding episode:', error);
-            showAlert('Error adding episode', 'error');
-        }
-    }
-
-    // Update media
-    document.getElementById('edit-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const id = document.getElementById('edit-id').value;
-        const type = document.getElementById('edit-type').value;
-        const formData = new FormData(this);
-        const mediaData = Object.fromEntries(formData.entries());
-        
-        const endpoint = type === 'movie' ? `/api/admin/movies/${id}` : `/api/admin/tv-series/${id}`;
-        
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.innerHTML = '<span class="spinner"></span>Updating...';
-        submitBtn.disabled = true;
-        
-        try {
-            const response = await fetch(endpoint, {
-                method: 'PUT',
-                headers: authHeaders,
-                body: JSON.stringify(mediaData)
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                showAlert(result.message || `${type === 'movie' ? 'Movie' : 'TV Series'} updated successfully!`, 'success');
-                modal.style.display = 'none';
-                // Refresh current results
-                if (searchInput.value.trim()) {
-                    performSearch();
-                } else {
-                    showAllMedia();
-                }
-            } else {
-                showAlert(result.message || result.error || `Error updating ${type}`, 'error');
-            }
-        } catch (error) {
-            console.error(`Error updating ${type}:`, error);
-            showAlert(`Error updating ${type}`, 'error');
-        } finally {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        }
-    });
-
-    // Delete media
-    async function deleteMedia(id, type) {
-        const mediaType = type === 'movie' ? 'movie' : 'TV series';
-        if (!confirm(`Are you sure you want to delete this ${mediaType}? This action cannot be undone.`)) {
-            return;
-        }
-        
-        const endpoint = type === 'movie' ? `/api/admin/movies/${id}` : `/api/admin/tv-series/${id}`;
-        
-        try {
-            const response = await fetch(endpoint, {
+            const response = await fetch(`/api/admin/tv-series/${currentSeriesId}`, {
                 method: 'DELETE',
                 headers: authHeaders
             });
             
-            const result = await response.json();
-            
             if (response.ok) {
-                showAlert(result.message || `${mediaType} deleted successfully!`, 'success');
-                modal.style.display = 'none';
-                // Refresh current results
-                if (searchInput.value.trim()) {
-                    performSearch();
-                } else {
-                    showAllMedia();
-                }
+                showAlert('Series deleted successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/admin'; // Redirect to admin page
+                }, 1500);
             } else {
-                showAlert(result.message || result.error || `Error deleting ${mediaType}`, 'error');
+                const error = await response.json();
+                showAlert(error.message || 'Error deleting series', 'error');
             }
         } catch (error) {
-            console.error(`Error deleting ${mediaType}:`, error);
-            showAlert(`Error deleting ${mediaType}`, 'error');
+            console.error('Error deleting series:', error);
+            showAlert('Error deleting series', 'error');
         }
-    }
+    });
 
     function showAlert(message, type) {
         const alertContainer = document.getElementById('alert-container');
@@ -944,9 +634,6 @@
             alertDiv.remove();
         }, 5000);
     }
-
-    // Load all media on page load
-    document.addEventListener('DOMContentLoaded', showAllMedia);
     </script>
 </body>
 </html>
