@@ -25,7 +25,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 极速加速器
             padding: 30px;
             border-radius: 20px;
             margin-bottom: 30px;
@@ -59,7 +59,7 @@
         }
         
         .nav a:hover {
-            background: rgba(255, 255, 255, 极速加速器
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
@@ -76,10 +76,10 @@
             margin-bottom: 40px;
         }
         
-        .search-box {
+        .search极速加速器
             display: flex;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 30极速加速器
             align-items: center;
         }
         
@@ -88,7 +88,7 @@
             padding: 15px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 25px;
-            font-size: 极速加速器
+            font-size: 16px;
             background: rgba(255, 255, 255, 0.1);
             color: #fff;
         }
@@ -97,7 +97,7 @@
             color: rgba(255, 255, 255, 0.6);
         }
         
-        .search极速加速器
+        .search-box input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
@@ -119,11 +119,11 @@
         
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 极速加速器
         }
         
         .btn-danger {
-            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            background: linear-gradient(135deg, #e53极速加速器
         }
         
         .btn-warning {
@@ -140,7 +140,7 @@
         }
         
         .results-section {
-            margin-top: 30极速加速器
+            margin-top: 30px;
         }
         
         .media-item {
@@ -151,7 +151,7 @@
             display: flex;
             align-items: center;
             gap: 20px;
-            box-shadow: 0 5px 15px极速加速器
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
         .media-poster {
@@ -174,7 +174,7 @@
         .media-info p {
             color: #ccc;
             margin-bottom: 5px;
-            font-size: 0.9rem;
+           极速加速器
         }
         
         .media-type {
@@ -188,9 +188,9 @@
         }
         
         .duplicate-badge {
-            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100极速加速器
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
             color: white;
-            padding: 4px 8px;
+            padding: 4极速加速器
             border-radius: 10px;
             font-size: 0.7rem;
             font-weight: 500;
@@ -275,7 +275,7 @@
         
         .alert {
             padding: 15px;
-            border-radius: 8极速加速器
+            border-radius: 8px;
             margin-bottom: 20px;
             font-weight: 500;
         }
@@ -286,7 +286,7 @@
         }
         
         .alert-error {
-            background: linear-gradient(135deg, #f56565 0%, #极速加速器
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
             color: white;
         }
 
@@ -378,7 +378,7 @@
             .media-item {
                 flex-direction: column;
                 text-align: center;
-极速加速器
+            }
             
             .media-actions {
                 flex-direction: row;
@@ -390,7 +390,7 @@
             }
             
             .add-episode-form {
-                grid-template极速加速器
+                grid-template-columns: 1fr;
             }
             
             .episode-item {
@@ -413,12 +413,12 @@
             <div class="nav">
                 <a href="/">Home</a>
                 <a href="/admin">Admin Panel</a>
-                <a href="/media">Public API</极速加速器
+                <a href="/media">Public API</a>
                 <a href="/api/docs">API Docs</a>
             </div>
         </div>
         
-        <div class="content">
+        <div class极速加速器
             <div id="alert-container"></div>
             
             <div class="search-section">
@@ -427,12 +427,12 @@
                 <div class="search-box">
                     <input type="text" id="search-input" placeholder="Search by title, description, or language..." />
                     <button id="search-btn" class="btn">Search</button>
-                    <button极速加速器
+                    <button id="show-all-btn" class="btn">Show All</button>
                 </div>
             </div>
             
             <div class="results-section">
-                <h3 style="color: #fff; margin-bottom: 20px;">Results</h3>
+                <h3 style极速加速器
                 <div id="results-container">
                     <p style="color: #ccc; text-align: center;">Use search above to find movies and TV series</p>
                 </div>
@@ -462,12 +462,12 @@
                 <div class="form-group">
                     <label for="edit-poster-url">Poster URL:</label>
                     <input type="url" id="edit-poster-url" name="poster_url">
-                </极速加速器
+                </div>
                 
                 <div class="form-group">
                     <label for="edit-release-date">Release Date:</label>
-                    <input type="date" id="极速加速器
-                </div>
+                    <input type="date" id="edit-release-date" name="release_date">
+                </极速加速器
                 
                 <div class="form-group">
                     <label for="edit-language">Language:</label>
@@ -475,7 +475,7 @@
                 </div>
                 
                 <!-- TV Episodes Section -->
-                <div id="tv-episodes-section" class="tv-episodes-section">
+                <div id="tv-episodes-section" class="tv极速加速器
                     <div class="section-header">
                         <h4 style="color: #fff; margin: 0;">Episodes Management</h4>
                     </div>
@@ -484,10 +484,10 @@
                     </div>
                     
                     <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <h5 style="极速加速器
+                        <h5 style="color: #fff; margin-bottom: 10px;">Add New Episode</h5>
                         <div class="add-episode-form">
                             <input type="number" id="new-season-number" placeholder="Season Number" min="1" class="episode-input">
-                            <input type="number" id="new-episode-number" placeholder="Episode Number" min="1" class="episode-input">
+                            <input type="number" id="new-episode-number" placeholder="Episode Number" min极速加速器
                             <input type="url" id="new-video-url" placeholder="720p Video URL" class="episode-input">
                             <button type="button" class="btn btn-success btn-small" id="add-episode-btn">Add Episode</button>
                         </div>
@@ -496,7 +496,7 @@
                 
                 <div style="display: flex; justify-content: space-between; margin-top: 25px;">
                     <button type="button" class="btn btn-danger" id="delete-media-btn">Delete Series</button>
-                    <button type="submit" class="btn">Update Series</button>
+                    <button type="submit" class="btn">Update Series</极速加速器
                 </div>
             </form>
         </div>
@@ -528,7 +528,7 @@
     showAllBtn.addEventListener('click', showAllMedia);
 
     async function performSearch() {
-        const query = search极速加速器
+        const query = searchInput.value.trim();
         if (!query) {
             showAlert('Please enter a search term', 'error');
             return;
@@ -544,23 +544,23 @@
             } else {
                 const error = await response.json();
                 showAlert(error.message || 'Error performing search', 'error');
-                resultsContainer.innerHTML = '<极速加速器
+                resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error performing search</p>';
             }
         } catch (error) {
             console.error('Error performing search:', error);
             showAlert('Error performing search', 'error');
-            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">Error performing search</p>';
+            resultsContainer.innerHTML = '<p style="color: #ccc;极速加速器
         }
     }
 
     async function showAllMedia() {
-        resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;"><span class="spinner"></span>Loading all media...</p>';
+        resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;"><span class="spinner"></极速加速器
 
         try {
             const response = await fetch('/media');
             if (response.ok) {
                 const data = await response.json();
-                const mediaList = data.data || data;
+                const media极速加速器
                 displayResults(mediaList, `All Media (${mediaList.length} items)`);
             } else {
                 const error = await response.json();
@@ -576,7 +576,7 @@
 
     function displayResults(results, title) {
         if (!results || results.length === 0) {
-            resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">No results found</p>';
+            resultsContainer.innerHTML = '<p style="极速加速器
             return;
         }
 
@@ -585,7 +585,7 @@
         results.forEach(item => {
             // Handle both API response formats
             const videoLinks = item.video_links || {
-                '720极速加速器
+                '720p': item.video_720p,
                 '1080p': item.video_1080p
             };
             
@@ -601,11 +601,11 @@
                         </div>
                         <p><strong>Release:</strong> ${item.release_date || 'N/A'}</p>
                         <p><strong>Language:</strong> ${item.language || 'N/A'}</p>
-                        <p><strong>Description:</strong> ${item.description ? item.description.substring(0, 100) + '...' : 'No description'}</p>
+                        <p><strong>Description:</strong> ${item.description ? item.description.substring(0, 100) + '...' : 'No description'}</极速加速器
                         ${item.type === 'tv' ? `<p><strong>Seasons:</strong> ${item.total_seasons || 0}</p>` : ''}
-                        ${item.type === 'movie' && videoLinks ? `<p><strong>Videos:</strong> ${videoLinks['720p'] ? '720p ' : ''}${videoLinks['1080p'] ? '1080p'极速加速器
+                        ${item.type === 'movie' && videoLinks ? `<p><strong>Videos:</strong> ${videoLinks['720p'] ? '720p ' : ''}${videoLinks['1080p'] ? '1080p' : ''}</p>` : ''}
                     </div>
-                    <div class极速加速器
+                    <div class="media-actions">
                         <button class="btn btn-warning btn-small edit-btn" data-id="${item.id}" data-type="${item.type}">Edit</button>
                         <button class="btn btn-danger btn-small delete-btn" data-id="${item.id}" data-type="${item.type}">Delete</button>
                     </div>
@@ -633,7 +633,7 @@
         if (e.target.classList.contains('update-episode-btn')) {
             const episodeId = e.target.getAttribute('data-episode-id');
             const videoUrl = document.querySelector(`input[data-episode-id="${episodeId}"][data-field="video_720p"]`).value;
-            updateEpisode(episodeId, videoUrl);
+            updateEpisode(episode极速加速器
         }
         
         if (e.target.classList.contains('delete-episode-btn')) {
@@ -656,7 +656,7 @@
         modal.style.display = 'none';
     });
 
-    window.addEventListener('click', function(e极速加速器
+    window.addEventListener('click', function(e) {
         if (e.target === modal) {
             modal.style.display = 'none';
         }
@@ -675,7 +675,7 @@
                 document.getElementById('edit-description').value = media.description || '';
                 document.getElementById('edit-poster-url').value = media.poster_url || '';
                 document.getElementById('edit-release-date').value = media.release_date || '';
-                document.getElementById('edit-language').value = media.language || '';
+                document.getElementById('edit-language').极速加速器
                 
                 const modalTitle = document.getElementById('modal-title');
                 
@@ -713,7 +713,7 @@
                 document.getElementById('episodes-container').innerHTML = '<p style="color: #ccc;">Error loading episodes</p>';
             }
         } catch (error) {
-            console.error('极速加速器
+            console.error('Error loading episodes:', error);
             document.getElementById('episodes-container').innerHTML = '<p style="color: #ccc;">Error loading episodes</p>';
         }
     }
@@ -734,11 +734,11 @@
         
         let html = '';
         
-        if (Object.keys(seasons).length === 0) {
+        if (Object.keys(seasons极速加速器
             html = '<p style="color: #ccc; text-align: center;">No episodes found. Add episodes using the form below.</p>';
         } else {
             // Create UI for each season
-            Object.keys(seasons).sort().forEach(season极速加速器
+            Object.keys(seasons).sort().forEach(seasonNum => {
                 html += `
                     <div class="season-section">
                         <h5 style="color: #fff; margin-bottom: 10px;">Season ${seasonNum}</h5>
@@ -799,9 +799,9 @@
                 headers: authHeaders
             });
             
-            if (response.ok) {
+            if (response.ok极速加速器
                 showAlert('Episode deleted successfully!', 'success');
-                loadTVEpisodes(currentTvId); // Refresh episodes list
+                loadTVEpisodes(currentT极速加速器
             } else {
                 const error = await response.json();
                 showAlert(error.message || 'Error deleting episode', 'error');
@@ -824,13 +824,13 @@
         }
         
         try {
-            const response = await fetch(`极速加速器
+            const response = await fetch(`/api/admin/tv-series/${currentTvId}/episodes`, {
                 method: 'POST',
                 headers: authHeaders,
                 body: JSON.stringify({
                     season_number: parseInt(seasonNumber),
                     episode_number: parseInt(episodeNumber),
-                    video_720极速加速器
+                    video_720p: videoUrl
                 })
             });
             
@@ -877,7 +877,7 @@
             
             const result = await response.json();
             
-            if (response.ok极速加速器
+            if (response.ok) {
                 showAlert(result.message || `${type === 'movie' ? 'Movie' : 'TV Series'} updated successfully!`, 'success');
                 modal.style.display = 'none';
                 // Refresh current results
@@ -900,7 +900,7 @@
 
     // Delete media
     async function deleteMedia(id, type) {
-        const mediaType = type === 'movie' ? 'movie' : 'TV series';
+        const mediaType = type === 'movie极速加速器
         if (!confirm(`Are you sure you want to delete this ${mediaType}? This action cannot be undone.`)) {
             return;
         }
@@ -929,7 +929,7 @@
             }
         } catch (error) {
             console.error(`Error deleting ${mediaType}:`, error);
-            showAlert(`极速加速器
+            showAlert(`Error deleting ${mediaType}`, 'error');
         }
     }
 
