@@ -230,6 +230,15 @@
             font-size: 0.8rem;
             font-weight: 500;
         }
+
+        .media-rating {
+            background: #d69e2e;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
         
         .media-actions {
             display: flex;
@@ -326,32 +335,33 @@
         
         .episode-item {
             display: flex;
-            align-items: center;
-            gap: 15px;
+            flex-direction: column;
+            gap: 10px;
             margin-bottom: 15px;
             padding: 15px;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
-        .episode-number {
-            min-width: 100px;
-            color: #fff;
+
+        .episode-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-weight: 500;
         }
         
-        .episode-url {
-            flex: 1;
+        .episode-url-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
         
-        .episode-url input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+        .episode-url-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #ccc;
         }
         
         .add-season-btn {
@@ -400,14 +410,8 @@
                 grid-template-columns: 1fr;
             }
             
-            .episode-item {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .episode-number {
-                min-width: auto;
-                text-align: center;
+            .episode-url-group {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -430,7 +434,6 @@
         <div class="content">
             <div id="alert-container"></div>
 
-            <!-- Add Movie Section -->
             <div id="add-movie" class="section active">
                 <h3 style="color: #fff; margin-bottom: 20px;">🎬 Add New Movie</h3>
                 
@@ -451,6 +454,23 @@
                         <label for="movie-description">Description:</label>
                         <textarea id="movie-description" name="description" rows="4"></textarea>
                     </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="movie-rating">Rating (0-10):</label>
+                            <input type="number" id="movie-rating" name="rating" step="0.1" min="0" max="10" placeholder="e.g., 8.8">
+                        </div>
+                        <div class="form-group">
+                            <label for="movie-language">Language:</label>
+                            <input type="text" id="movie-language" name="language">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="movie-cast">Cast (JSON format):</label>
+                        <textarea id="movie-cast" name="cast" rows="4" placeholder='[{"name": "Leonardo DiCaprio", "character": "Cobb", "image": "..."}]'></textarea>
+                        <small class="form-text text-muted">Copy/paste cast data from TMDB JSON.</small>
+                    </div>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -462,31 +482,34 @@
                             <input type="date" id="movie-release-date" name="release_date">
                         </div>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="movie-language">Language:</label>
-                            <input type="text" id="movie-language" name="language">
-                        </div>
-                        <div></div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="movie-video-720p">720p Video Link:</label>
-                            <input type="url" id="movie-video-720p" name="video_720p" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="movie-video-1080p">1080p Video Link:</label>
-                            <input type="url" id="movie-video-1080p" name="video_1080p" required>
+
+                    <h4 style="color: #fff; margin-top: 30px; margin-bottom: 15px;">🔗 Video and Download Links</h4>
+                    <div class="form-group">
+                        <label>720p Links:</label>
+                        <div class="form-row">
+                            <input type="url" id="movie-video-720p" name="video_720p" placeholder="Video URL">
+                            <input type="url" id="movie-download-720p" name="download_720p" placeholder="Download URL">
                         </div>
                     </div>
-                    
+                    <div class="form-group">
+                        <label>1080p Links:</label>
+                        <div class="form-row">
+                            <input type="url" id="movie-video-1080p" name="video_1080p" placeholder="Video URL">
+                            <input type="url" id="movie-download-1080p" name="download_1080p" placeholder="Download URL">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>2160p Links:</label>
+                        <div class="form-row">
+                            <input type="url" id="movie-video-2160p" name="video_2160p" placeholder="Video URL">
+                            <input type="url" id="movie-download-2160p" name="download_2160p" placeholder="Download URL">
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn">Add Movie</button>
                 </form>
             </div>
 
-            <!-- Add TV Series Section -->
             <div id="add-tv" class="section">
                 <h3 style="color: #fff; margin-bottom: 20px;">📺 Add New TV Series</h3>
                 
@@ -507,6 +530,23 @@
                         <label for="tv-description">Description:</label>
                         <textarea id="tv-description" name="description" rows="4"></textarea>
                     </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tv-rating">Rating (0-10):</label>
+                            <input type="number" id="tv-rating" name="rating" step="0.1" min="0" max="10" placeholder="e.g., 9.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="tv-language">Language:</label>
+                            <input type="text" id="tv-language" name="language">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tv-cast">Cast (JSON format):</label>
+                        <textarea id="tv-cast" name="cast" rows="4" placeholder='[{"name": "Bryan Cranston", "character": "Walter White", "image": "..."}]'></textarea>
+                        <small class="form-text text-muted">Copy/paste cast data from TMDB JSON.</small>
+                    </div>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -518,18 +558,11 @@
                             <input type="date" id="tv-release-date" name="release_date">
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="tv-language">Language:</label>
-                        <input type="text" id="tv-language" name="language">
-                    </div>
 
-                    <!-- Episodes Section -->
                     <div class="episodes-section">
-                        <h4 style="color: #fff; margin-bottom: 20px;">📺 Episodes</h4>
+                        <h4 style="color: #fff; margin-bottom: 20px;">📺 Seasons & Episodes</h4>
                         <div id="seasons-container">
-                            <!-- Seasons will be added here dynamically -->
-                        </div>
+                            </div>
                         <button type="button" id="add-season-btn" class="btn add-season-btn">+ Add Season</button>
                     </div>
                     
@@ -537,7 +570,6 @@
                 </form>
             </div>
 
-            <!-- Search & Edit Section -->
             <div id="search-edit" class="section">
                 <h3 style="color: #fff; margin-bottom: 20px;">🔍 Search & Edit Media</h3>
                 
@@ -554,7 +586,6 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -574,14 +605,25 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="edit-poster-url">Poster URL:</label>
-                    <input type="url" id="edit-poster-url" name="poster_url">
+                    <label for="edit-cast">Cast (JSON format):</label>
+                    <textarea id="edit-cast" name="cast" rows="4"></textarea>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
+                        <label for="edit-poster-url">Poster URL:</label>
+                        <input type="url" id="edit-poster-url" name="poster_url">
+                    </div>
+                    <div class="form-group">
                         <label for="edit-release-date">Release Date:</label>
                         <input type="date" id="edit-release-date" name="release_date">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-rating">Rating (0-10):</label>
+                        <input type="number" id="edit-rating" name="rating" step="0.1" min="0" max="10">
                     </div>
                     <div class="form-group">
                         <label for="edit-language">Language:</label>
@@ -590,14 +632,26 @@
                 </div>
                 
                 <div id="movie-fields" style="display: none;">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-video-720p">720p Video Link:</label>
-                            <input type="url" id="edit-video-720p" name="video_720p">
+                    <h4 style="color: #fff; margin-top: 20px; margin-bottom: 15px;">🔗 Video and Download Links</h4>
+                    <div class="form-group">
+                        <label>720p Links:</label>
+                        <div class="form-row">
+                            <input type="url" id="edit-video-720p" name="video_720p" placeholder="Video URL">
+                            <input type="url" id="edit-download-720p" name="download_720p" placeholder="Download URL">
                         </div>
-                        <div class="form-group">
-                            <label for="edit-video-1080p">1080p Video Link:</label>
-                            <input type="url" id="edit-video-1080p" name="video_1080p">
+                    </div>
+                    <div class="form-group">
+                        <label>1080p Links:</label>
+                        <div class="form-row">
+                            <input type="url" id="edit-video-1080p" name="video_1080p" placeholder="Video URL">
+                            <input type="url" id="edit-download-1080p" name="download_1080p" placeholder="Download URL">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>2160p Links:</label>
+                        <div class="form-row">
+                            <input type="url" id="edit-video-2160p" name="video_2160p" placeholder="Video URL">
+                            <input type="url" id="edit-download-2160p" name="download_2160p" placeholder="Download URL">
                         </div>
                     </div>
                 </div>
@@ -612,32 +666,26 @@
 
     // Section switching
     function showSection(sectionId) {
-        // Hide all sections
         document.querySelectorAll('.section').forEach(section => {
             section.classList.remove('active');
         });
         
-        // Remove active class from all nav buttons
         document.querySelectorAll('.nav button').forEach(btn => {
             btn.classList.remove('active');
         });
         
-        // Show selected section
         document.getElementById(sectionId).classList.add('active');
         document.getElementById('btn-' + sectionId.replace('-', '-')).classList.add('active');
         
-        // Initialize TV section if needed
         if (sectionId === 'add-tv' && seasonCount === 0) {
             addSeason();
         }
         
-        // Load all media if search section
         if (sectionId === 'search-edit') {
             showAllMedia();
         }
     }
 
-    // Initialize
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btn-add-movie').classList.add('active');
     });
@@ -657,18 +705,12 @@
                 <button type="button" class="btn btn-danger btn-small" onclick="removeSeason(${seasonCount})">Remove Season</button>
             </div>
             <div id="episodes-${seasonCount}">
-                <div class="episode-item">
-                    <div class="episode-number">Episode 1:</div>
-                    <div class="episode-url">
-                        <input type="url" name="season_${seasonCount}_episode_1" placeholder="720p Video URL for Episode 1" required>
-                    </div>
-                    <button type="button" class="btn btn-danger btn-small" onclick="removeEpisode(this)">Remove</button>
                 </div>
-            </div>
             <button type="button" class="btn btn-success btn-small" onclick="addEpisode(${seasonCount})">+ Add Episode</button>
         `;
         
         seasonsContainer.appendChild(seasonDiv);
+        addEpisode(seasonCount); // Add the first episode automatically
     }
 
     // Remove Season Function
@@ -678,7 +720,7 @@
         }
     }
 
-    // Add Episode Function
+    // Add Episode Function (Updated for new fields)
     function addEpisode(seasonNumber) {
         const episodesContainer = document.getElementById(`episodes-${seasonNumber}`);
         const episodeCount = episodesContainer.children.length + 1;
@@ -692,11 +734,47 @@
         episodeDiv.className = 'episode-item';
         
         episodeDiv.innerHTML = `
-            <div class="episode-number">Episode ${episodeCount}:</div>
-            <div class="episode-url">
-                <input type="url" name="season_${seasonNumber}_episode_${episodeCount}" placeholder="720p Video URL for Episode ${episodeCount}" required>
+            <div class="episode-header">
+                <span>Episode ${episodeCount}</span>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeEpisode(this)">Remove</button>
             </div>
-            <button type="button" class="btn btn-danger btn-small" onclick="removeEpisode(this)">Remove</button>
+            <div class="form-group">
+                <label for="season_${seasonNumber}_episode_${episodeCount}_name">Episode Name:</label>
+                <input type="text" id="season_${seasonNumber}_episode_${episodeCount}_name" name="season_${seasonNumber}_episode_${episodeCount}_name" placeholder="e.g., Chapter One: The Vanishing of Will Byers" required>
+            </div>
+            <div class="form-group">
+                <label>Video and Download Links:</label>
+                <div class="episode-url-group">
+                    <div>
+                        <input type="url" name="season_${seasonNumber}_episode_${episodeCount}_video_720p" placeholder="720p Video URL">
+                        <small class="form-text text-muted">Video link (e.g., HLS/MP4)</small>
+                    </div>
+                    <div>
+                        <input type="url" name="season_${seasonNumber}_episode_${episodeCount}_download_720p" placeholder="720p Download URL">
+                        <small class="form-text text-muted">Download link (e.g., Torrent/DDL)</small>
+                    </div>
+                </div>
+                <div class="episode-url-group" style="margin-top: 15px;">
+                    <div>
+                        <input type="url" name="season_${seasonNumber}_episode_${episodeCount}_video_1080p" placeholder="1080p Video URL">
+                        <small class="form-text text-muted">Video link (e.g., HLS/MP4)</small>
+                    </div>
+                    <div>
+                        <input type="url" name="season_${seasonNumber}_episode_${episodeCount}_download_1080p" placeholder="1080p Download URL">
+                        <small class="form-text text-muted">Download link (e.g., Torrent/DDL)</small>
+                    </div>
+                </div>
+                <div class="episode-url-group" style="margin-top: 15px;">
+                    <div>
+                        <input type="url" name="season_${seasonNumber}_episode_${episodeCount}_video_2160p" placeholder="2160p Video URL">
+                        <small class="form-text text-muted">Video link (e.g., HLS/MP4)</small>
+                    </div>
+                    <div>
+                        <input type="url" name="season_${seasonNumber}_episode_${episodeCount}_download_2160p" placeholder="2160p Download URL">
+                        <small class="form-text text-muted">Download link (e.g., Torrent/DDL)</small>
+                    </div>
+                </div>
+            </div>
         `;
         
         episodesContainer.appendChild(episodeDiv);
@@ -704,12 +782,11 @@
 
     // Remove Episode Function
     function removeEpisode(button) {
-        const episodeItem = button.parentElement;
+        const episodeItem = button.closest('.episode-item');
         const episodesContainer = episodeItem.parentElement;
         
         if (episodesContainer.children.length > 1) {
             episodeItem.remove();
-            // Renumber episodes
             renumberEpisodes(episodesContainer);
         } else {
             showAlert('At least one episode is required per season', 'error');
@@ -720,16 +797,20 @@
     function renumberEpisodes(episodesContainer) {
         const episodes = episodesContainer.children;
         for (let i = 0; i < episodes.length; i++) {
-            const episodeNumber = episodes[i].querySelector('.episode-number');
-            const input = episodes[i].querySelector('input');
-            const seasonMatch = input.name.match(/season_(\d+)_episode_\d+/);
+            const episodeHeader = episodes[i].querySelector('.episode-header span');
+            episodeHeader.textContent = `Episode ${i + 1}`;
             
-            if (seasonMatch) {
-                const seasonNumber = seasonMatch[1];
-                episodeNumber.textContent = `Episode ${i + 1}:`;
-                input.name = `season_${seasonNumber}_episode_${i + 1}`;
-                input.placeholder = `720p Video URL for Episode ${i + 1}`;
-            }
+            const inputs = episodes[i].querySelectorAll('input');
+            inputs.forEach(input => {
+                const oldName = input.name;
+                if (oldName) {
+                    const seasonNumber = oldName.match(/season_(\d+)/)[1];
+                    const newName = oldName.replace(/episode_\d+/, `episode_${i + 1}`);
+                    input.name = newName;
+                    input.id = newName.replace(/_/g, '-');
+                    input.placeholder = input.placeholder.replace(/Episode \d+/, `Episode ${i + 1}`);
+                }
+            });
         }
     }
 
@@ -764,6 +845,8 @@
                     document.getElementById('movie-poster-url').value = data.poster_url || '';
                     document.getElementById('movie-release-date').value = data.release_date || '';
                     document.getElementById('movie-language').value = data.language || '';
+                    document.getElementById('movie-rating').value = data.rating || '';
+                    document.getElementById('movie-cast').value = JSON.stringify(data.cast, null, 2) || '';
                     showAlert('Movie details fetched successfully!', 'success');
                 } else {
                     showAlert(result.message || 'Movie not found in TMDB', 'error');
@@ -809,6 +892,8 @@
                     document.getElementById('tv-poster-url').value = data.poster_url || '';
                     document.getElementById('tv-release-date').value = data.release_date || '';
                     document.getElementById('tv-language').value = data.language || '';
+                    document.getElementById('tv-rating').value = data.rating || '';
+                    document.getElementById('tv-cast').value = JSON.stringify(data.cast, null, 2) || '';
                     showAlert('TV series details fetched successfully!', 'success');
                 } else {
                     showAlert(result.message || 'TV series not found in TMDB', 'error');
@@ -826,13 +911,32 @@
         }
     });
 
-    // Add movie
+    // Add movie (Updated to handle new fields)
     document.getElementById('movie-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
-        const movieData = Object.fromEntries(formData.entries());
-        
+        const movieData = {
+            tmdb_id: parseInt(formData.get('tmdb_id')),
+            title: formData.get('title'),
+            description: formData.get('description'),
+            poster_url: formData.get('poster_url'),
+            release_date: formData.get('release_date'),
+            language: formData.get('language'),
+            rating: formData.get('rating') ? parseFloat(formData.get('rating')) : undefined,
+            cast: formData.get('cast') ? JSON.parse(formData.get('cast')) : undefined,
+            video_links: {
+                '720p': formData.get('video_720p') || undefined,
+                '1080p': formData.get('video_1080p') || undefined,
+                '2160p': formData.get('video_2160p') || undefined
+            },
+            download_links: {
+                '720p': formData.get('download_720p') || undefined,
+                '1080p': formData.get('download_1080p') || undefined,
+                '2160p': formData.get('download_2160p') || undefined
+            }
+        };
+
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Adding Movie...';
@@ -864,7 +968,7 @@
         }
     });
 
-    // Add TV series with episodes
+    // Add TV series with episodes (Updated for new fields and unified submission)
     document.getElementById('tv-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -875,33 +979,49 @@
             description: formData.get('description'),
             poster_url: formData.get('poster_url'),
             release_date: formData.get('release_date'),
-            language: formData.get('language')
+            language: formData.get('language'),
+            rating: formData.get('rating') ? parseFloat(formData.get('rating')) : undefined,
+            cast: formData.get('cast') ? JSON.parse(formData.get('cast')) : undefined,
+            seasons: []
         };
         
-        // Collect episodes data
-        const episodes = {};
-        for (let [key, value] of formData.entries()) {
-            if (key.startsWith('season_') && key.includes('_episode_')) {
-                const match = key.match(/season_(\d+)_episode_(\d+)/);
-                if (match) {
-                    const seasonNum = parseInt(match[1]);
-                    const episodeNum = parseInt(match[2]);
-                    
-                    if (!episodes[seasonNum]) {
-                        episodes[seasonNum] = {};
+        // Collect episodes data for all seasons
+        const seasons = document.querySelectorAll('.season-container');
+        seasons.forEach((season, seasonIndex) => {
+            const episodesContainer = season.querySelector('.episodes-section');
+            const episodes = season.querySelectorAll('.episode-item');
+            
+            const seasonObject = {
+                season_number: seasonIndex + 1,
+                episodes: []
+            };
+            
+            episodes.forEach((episode, episodeIndex) => {
+                const episodeObject = {
+                    episode_number: episodeIndex + 1,
+                    episode_name: episode.querySelector('input[name*="_name"]').value,
+                    video_links: {
+                        '720p': episode.querySelector('input[name*="_video_720p"]').value || undefined,
+                        '1080p': episode.querySelector('input[name*="_video_1080p"]').value || undefined,
+                        '2160p': episode.querySelector('input[name*="_video_2160p"]').value || undefined
+                    },
+                    download_links: {
+                        '720p': episode.querySelector('input[name*="_download_720p"]').value || undefined,
+                        '1080p': episode.querySelector('input[name*="_download_1080p"]').value || undefined,
+                        '2160p': episode.querySelector('input[name*="_download_2160p"]').value || undefined
                     }
-                    episodes[seasonNum][episodeNum] = value;
-                }
-            }
-        }
-        
+                };
+                seasonObject.episodes.push(episodeObject);
+            });
+            tvData.seasons.push(seasonObject);
+        });
+
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Adding TV Series...';
         
         try {
-            // First add the TV series
-            const tvResponse = await fetch('/api/admin/tv-series', {
+            const response = await fetch('/api/admin/tv-series', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -910,58 +1030,15 @@
                 body: JSON.stringify(tvData)
             });
             
-            const tvResult = await tvResponse.json();
+            const result = await response.json();
             
-            if (tvResponse.ok) {
-                const tvSeriesId = tvResult.id;
-                let episodeCount = 0;
-                let failedEpisodes = 0;
-                
-                // Then add all episodes
-                for (const [seasonNum, seasonEpisodes] of Object.entries(episodes)) {
-                    for (const [episodeNum, videoUrl] of Object.entries(seasonEpisodes)) {
-                        if (videoUrl.trim()) {
-                            const episodeData = {
-                                season_number: parseInt(seasonNum),
-                                episode_number: parseInt(episodeNum),
-                                video_720p: videoUrl
-                            };
-                            
-                            try {
-                                const episodeResponse = await fetch(`/api/admin/tv-series/${tvSeriesId}/episodes`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': 'Basic ' + btoa('venura:venura')
-                                    },
-                                    body: JSON.stringify(episodeData)
-                                });
-                                
-                                if (episodeResponse.ok) {
-                                    episodeCount++;
-                                } else {
-                                    failedEpisodes++;
-                                }
-                            } catch (error) {
-                                failedEpisodes++;
-                            }
-                        }
-                    }
-                }
-                
-                let message = `TV series added successfully with ${episodeCount} episodes!`;
-                if (failedEpisodes > 0) {
-                    message += ` (${failedEpisodes} episodes failed to add)`;
-                }
-                
-                showAlert(message, failedEpisodes > 0 ? 'error' : 'success');
+            if (response.ok) {
+                showAlert(result.message || 'TV series added successfully!', 'success');
                 this.reset();
-                // Reset seasons
                 document.getElementById('seasons-container').innerHTML = '';
                 seasonCount = 0;
-                addSeason();
             } else {
-                showAlert(tvResult.message || tvResult.error || 'Error adding TV series', 'error');
+                showAlert(result.message || result.error || 'Error adding TV series', 'error');
             }
         } catch (error) {
             console.error('Error adding TV series:', error);
@@ -1032,6 +1109,7 @@
         }
     }
 
+    // Display results (Updated to show new fields)
     function displayResults(results, title) {
         if (!results || results.length === 0) {
             resultsContainer.innerHTML = '<p style="color: #ccc; text-align: center;">No results found</p>';
@@ -1041,11 +1119,8 @@
         let html = `<h4 style="color: #fff; margin-bottom: 20px;">${title}</h4>`;
         
         results.forEach(item => {
-            // Handle both API response formats
-            const videoLinks = item.video_links || {
-                '720p': item.video_720p,
-                '1080p': item.video_1080p
-            };
+            const videoLinks = item.video_links || {};
+            const downloadLinks = item.download_links || {};
             
             html += `
                 <div class="media-item">
@@ -1053,13 +1128,16 @@
                       `<div class="media-poster" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem;">${item.type === 'movie' ? '🎬' : '📺'}</div>`}
                     <div class="media-info">
                         <h4>${item.title}</h4>
-                        <span class="media-type">${item.type.toUpperCase()}</span>
+                        <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                            <span class="media-type">${item.type.toUpperCase()}</span>
+                            ${item.rating ? `<span class="media-rating">⭐ ${item.rating.toFixed(1)}</span>` : ''}
+                        </div>
                         <p><strong>Release:</strong> ${item.release_date || 'N/A'}</p>
                         <p><strong>Language:</strong> ${item.language || 'N/A'}</p>
                         <p><strong>TMDB ID:</strong> ${item.tmdb_id || 'N/A'}</p>
                         <p><strong>Description:</strong> ${item.description ? (item.description.length > 100 ? item.description.substring(0, 100) + '...' : item.description) : 'No description'}</p>
-                        ${item.type === 'tv' ? `<p><strong>Seasons:</strong> ${item.total_seasons || 0}</p>` : ''}
-                        ${item.type === 'movie' && videoLinks ? `<p><strong>Video Links:</strong> ${videoLinks['720p'] ? '720p ✓' : ''} ${videoLinks['1080p'] ? '1080p ✓' : ''}</p>` : ''}
+                        ${item.type === 'tv' ? `<p><strong>Seasons:</strong> ${item.total_seasons || (item.seasons ? item.seasons.length : 0)}</p>` : ''}
+                        ${item.type === 'movie' ? `<p><strong>Links:</strong> ${Object.keys(videoLinks).join('p, ')}p / ${Object.keys(downloadLinks).join('p, ')}p</p>` : ''}
                     </div>
                     <div class="media-actions">
                         <button class="btn btn-warning btn-small edit-btn" data-id="${item.id}" data-type="${item.type}">Edit</button>
@@ -1101,6 +1179,7 @@
         }
     });
 
+    // Open Edit Modal (Updated to populate new fields)
     async function openEditModal(id, type) {
         try {
             const response = await fetch(`/media/${id}`);
@@ -1115,6 +1194,8 @@
                 document.getElementById('edit-poster-url').value = media.poster_url || '';
                 document.getElementById('edit-release-date').value = media.release_date || '';
                 document.getElementById('edit-language').value = media.language || '';
+                document.getElementById('edit-rating').value = media.rating || '';
+                document.getElementById('edit-cast').value = JSON.stringify(media.cast, null, 2) || '';
                 
                 const movieFields = document.getElementById('movie-fields');
                 const modalTitle = document.getElementById('modal-title');
@@ -1122,8 +1203,13 @@
                 if (type === 'movie') {
                     movieFields.style.display = 'block';
                     const videoLinks = media.video_links || {};
-                    document.getElementById('edit-video-720p').value = videoLinks['720p'] || media.video_720p || '';
-                    document.getElementById('edit-video-1080p').value = videoLinks['1080p'] || media.video_1080p || '';
+                    const downloadLinks = media.download_links || {};
+                    document.getElementById('edit-video-720p').value = videoLinks['720p'] || '';
+                    document.getElementById('edit-video-1080p').value = videoLinks['1080p'] || '';
+                    document.getElementById('edit-video-2160p').value = videoLinks['2160p'] || '';
+                    document.getElementById('edit-download-720p').value = downloadLinks['720p'] || '';
+                    document.getElementById('edit-download-1080p').value = downloadLinks['1080p'] || '';
+                    document.getElementById('edit-download-2160p').value = downloadLinks['2160p'] || '';
                     modalTitle.textContent = 'Edit Movie';
                 } else {
                     movieFields.style.display = 'none';
@@ -1140,15 +1226,37 @@
         }
     }
 
-    // Update media
+    // Update media (Updated to handle new fields)
     document.getElementById('edit-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const id = document.getElementById('edit-id').value;
         const type = document.getElementById('edit-type').value;
         const formData = new FormData(this);
-        const mediaData = Object.fromEntries(formData.entries());
+
+        const mediaData = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            poster_url: formData.get('poster_url'),
+            release_date: formData.get('release_date'),
+            language: formData.get('language'),
+            rating: formData.get('rating') ? parseFloat(formData.get('rating')) : undefined,
+            cast: formData.get('cast') ? JSON.parse(formData.get('cast')) : undefined,
+        };
         
+        if (type === 'movie') {
+            mediaData.video_links = {
+                '720p': formData.get('video_720p') || undefined,
+                '1080p': formData.get('video_1080p') || undefined,
+                '2160p': formData.get('video_2160p') || undefined
+            };
+            mediaData.download_links = {
+                '720p': formData.get('download_720p') || undefined,
+                '1080p': formData.get('download_1080p') || undefined,
+                '2160p': formData.get('download_2160p') || undefined
+            };
+        }
+
         const endpoint = type === 'movie' ? `/api/admin/movies/${id}` : `/api/admin/tv-series/${id}`;
         
         const submitBtn = this.querySelector('button[type="submit"]');
@@ -1170,7 +1278,6 @@
             if (response.ok) {
                 showAlert(result.message || `${type === 'movie' ? 'Movie' : 'TV Series'} updated successfully!`, 'success');
                 modal.style.display = 'none';
-                // Refresh current results
                 if (searchInput.value.trim()) {
                     performSearch();
                 } else {
@@ -1210,7 +1317,6 @@
             
             if (response.ok) {
                 showAlert(result.message || `${mediaType} deleted successfully!`, 'success');
-                // Refresh current results
                 if (searchInput.value.trim()) {
                     performSearch();
                 } else {
@@ -1232,16 +1338,15 @@
         alertDiv.textContent = message;
         alertContainer.appendChild(alertDiv);
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (alertDiv.parentNode) {
                 alertDiv.remove();
             }
         }, 5000);
         
-        // Scroll to top to show alert
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     </script>
 </body>
 </html>
+
