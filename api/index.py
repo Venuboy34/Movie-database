@@ -1,12 +1,12 @@
-from flask import Flask, request, jsonify, render_template
-from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
-import requests
-import json
-from functools import wraps
 import os
+import json
+import requests
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+from functools import wraps
 from datetime import datetime
-from sqlalchemy import Sequence  # Added for shared sequence
 
 app = Flask(__name__, template_folder='../templates')
 app.config['SECRET_KEY'] = 'zero-creations-media-database-2024'
@@ -21,125 +21,100 @@ CORS(app, resources={
     }
 })
 
-# Database configuration with error handling
-try:
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url:
-        # Fix for psycopg2 compatibility
-        if database_url.startswith('postgres://'):
-            database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    else:
-        # Fallback to SQLite for local development
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///media.db'
-    
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-    }
-except Exception as e:
-    print(f"Database configuration error: {e}")
+# Configuration
+DATABASE_URL = os.environ.get('DATABASE_URL')
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '52f6a75a38a397d940959b336801e1c3')
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'Venera')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'Venera')
 
-db = SQLAlchemy(app)
-
-# TMDB API Configuration
-TMDB_API_KEY = '52f6a75a38a397d940959b336801e1c3'
+# TMDB Configuration
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
-TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
+TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original'
 
-# Database Models - REMOVED unique constraint to allow duplicates
-class Movie(db.Model):
-    __tablename__ = 'movie'
-    id = db.Column(db.Integer, Sequence('media_id_seq'), primary_key=True)  # Added Sequence
-    tmdb_id = db.Column(db.Integer, nullable=False)  # Removed unique=True to allow duplicates
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    poster_url = db.Column(db.String(500))
-    release_date = db.Column(db.String(20))
-    language = db.Column(db.String(50))
-    video_720p = db.Column(db.String(500))
-    video_1080p = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
-class TVSeries(db.Model):
-    __tablename__ = 'tv_series'
-    id = db.Column(db.Integer, Sequence('media_id_seq'), primary_key=True)  # Added Sequence
-    tmdb_id = db.Column(db.Integer, nullable=False)  # Removed unique=True to allow duplicates
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    poster_url = db.Column(db.String(500))
-    release_date = db.Column(db.String(20))
-    language = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    seasons = db.relationship('Season', backref='tv_series', lazy=True, cascade='all, delete-orphan')
-
-class Season(db.Model):
-    __tablename__ = 'season'
-    id = db.Column(db.Integer, primary_key=True)
-    tv_series_id = db.Column(db.Integer, db.ForeignKey('tv_series.id'), nullable=False)
-    season_number = db.Column(db.Integer, nullable=False)
-    episodes = db.relationship('Episode', backref='season', lazy=True, cascade='all, delete-orphan')
-    __table_args__ = (db.UniqueConstraint('tv_series_id', 'season_number'),)
-
-class Episode(db.Model):
-    __tablename__ = 'episode'
-    id = db.Column(db.Integer, primary_key=True)
-    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), nullable=False)
-    episode_number = db.Column(db.Integer, nullable=False)
-    video_720p = db.Column(db.String(500))
-    __table_args__ = (db.UniqueConstraint('season_id', 'episode_number'),)
-
-# Initialize database with error handling
-def init_db():
+def get_db_connection():
+    """Get database connection"""
     try:
-        with app.app_context():
-            db.create_all()
-            
-            # For PostgreSQL: Set sequence to max existing ID + 1
-            if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql://'):
-                # Get max IDs from both tables
-                max_movie_id = db.session.execute("SELECT COALESCE(MAX(id), 0) FROM movie").scalar()
-                max_tv_id = db.session.execute("SELECT COALESCE(MAX(id), 0) FROM tv_series").scalar()
-                next_id = max(max_movie_id, max_tv_id) + 1
-                
-                # Set the sequence to the next available ID
-                db.session.execute(f"SELECT setval('media_id_seq', {next_id})")
-                db.session.commit()
-                print(f"✅ Shared sequence set to start at: {next_id}")
-                
-        print("✅ Database initialized successfully")
+        if DATABASE_URL:
+            # Fix for psycopg2 compatibility
+            db_url = DATABASE_URL
+            if db_url.startswith('postgres://'):
+                db_url = db_url.replace('postgres://', 'postgresql://', 1)
+            conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        else:
+            # Fallback for local development
+            conn = psycopg2.connect(
+                "host=localhost dbname=media_db user=postgres password=password",
+                cursor_factory=RealDictCursor
+            )
+        return conn
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        return None
+
+def init_db():
+    """Initialize database tables"""
+    conn = get_db_connection()
+    if not conn:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Create single media table with JSONB fields
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS media (
+                id SERIAL PRIMARY KEY,
+                type VARCHAR(10) NOT NULL CHECK (type IN ('movie', 'tv')),
+                tmdb_id INTEGER NOT NULL,
+                title VARCHAR(500) NOT NULL,
+                description TEXT,
+                thumbnail VARCHAR(1000),
+                release_date VARCHAR(20),
+                language VARCHAR(10),
+                rating DECIMAL(3,1),
+                cast JSONB DEFAULT '[]'::jsonb,
+                video_links JSONB DEFAULT '{}'::jsonb,
+                download_links JSONB DEFAULT '{}'::jsonb,
+                seasons JSONB DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        
+        # Create indexes for better performance
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_media_type ON media(type);')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_media_tmdb_id ON media(tmdb_id);')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_media_title ON media USING gin(to_tsvector(\'english\', title));')
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Database initialized successfully")
         return True
     except Exception as e:
-        print(f"❌ Database initialization error: {e}")
+        print(f"Database initialization error: {e}")
+        if conn:
+            conn.close()
         return False
-
-# [The rest of your code remains EXACTLY the same...]
-# All routes, helper functions, and other code below this point
-# are completely unchanged from your original script
 
 # Authentication decorator
 def auth_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        try:
-            auth = request.authorization
-            if not auth or auth.username != 'venura' or auth.password != 'venura':
-                response = jsonify({'error': 'Authentication required'})
-                response.status_code = 401
-                response.headers['WWW-Authenticate'] = 'Basic realm="Admin Panel"'
-                response.headers['Access-Control-Allow-Origin'] = '*'
-                return response
-            return f(*args, **kwargs)
-        except Exception as e:
-            print(f"Auth error: {e}")
-            return make_cors_response({'error': 'Authentication failed'}), 500
+        auth = request.authorization
+        if not auth or auth.username != ADMIN_USERNAME or auth.password != ADMIN_PASSWORD:
+            response = jsonify({'error': 'Authentication required'})
+            response.status_code = 401
+            response.headers['WWW-Authenticate'] = 'Basic realm="Admin Panel"'
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            return response
+        return f(*args, **kwargs)
     return decorated_function
 
 # CORS response helper
 def make_cors_response(data, status_code=200):
     response = app.response_class(
-        response=json.dumps(data, indent=4) if isinstance(data, (dict, list)) else data,
+        response=json.dumps(data, indent=4, ensure_ascii=False) if isinstance(data, (dict, list)) else data,
         status=status_code,
         mimetype='application/json'
     )
@@ -148,50 +123,88 @@ def make_cors_response(data, status_code=200):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
     return response
 
-# TMDB API Functions with better error messages
-def fetch_movie_details(tmdb_id):
+# TMDB API Functions
+def fetch_tmdb_movie(tmdb_id):
+    """Fetch movie details from TMDB with cast"""
     try:
-        print(f"🎬 Fetching movie details for TMDB ID: {tmdb_id}")
+        print(f"Fetching movie details for TMDB ID: {tmdb_id}")
         url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}"
         response = requests.get(url, timeout=10)
+        
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Movie details loaded: {data.get('title', 'Unknown')}")
+            
+            # Fetch cast details
+            cast_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}/credits?api_key={TMDB_API_KEY}"
+            cast_response = requests.get(cast_url, timeout=10)
+            cast_data = []
+            
+            if cast_response.status_code == 200:
+                cast_info = cast_response.json().get('cast', [])[:10]  # Limit to 10 main cast
+                for person in cast_info:
+                    cast_data.append({
+                        'name': person.get('name', ''),
+                        'character': person.get('character', ''),
+                        'image': f"{TMDB_IMAGE_BASE_URL}{person.get('profile_path')}" if person.get('profile_path') else None
+                    })
+            
             return {
                 'title': data.get('title', ''),
                 'description': data.get('overview', ''),
-                'poster_url': f"{TMDB_IMAGE_BASE_URL}{data.get('poster_path', '')}" if data.get('poster_path') else '',
+                'thumbnail': f"{TMDB_IMAGE_BASE_URL}{data.get('poster_path')}" if data.get('poster_path') else '',
                 'release_date': data.get('release_date', ''),
-                'language': data.get('original_language', '')
+                'language': data.get('original_language', ''),
+                'rating': round(data.get('vote_average', 0), 1),
+                'cast': cast_data
             }
         else:
-            print(f"❌ Failed to fetch movie: {response.status_code}")
+            print(f"TMDB API error: {response.status_code}")
+            return None
     except Exception as e:
-        print(f"❌ Error fetching movie details: {e}")
-    return None
+        print(f"Error fetching TMDB movie: {e}")
+        return None
 
-def fetch_tv_details(tmdb_id):
+def fetch_tmdb_tv(tmdb_id):
+    """Fetch TV series details from TMDB with cast"""
     try:
-        print(f"📺 Fetching TV details for TMDB ID: {tmdb_id}")
+        print(f"Fetching TV series details for TMDB ID: {tmdb_id}")
         url = f"{TMDB_BASE_URL}/tv/{tmdb_id}?api_key={TMDB_API_KEY}"
         response = requests.get(url, timeout=10)
+        
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ TV details loaded: {data.get('name', 'Unknown')}")
+            
+            # Fetch cast details
+            cast_url = f"{TMDB_BASE_URL}/tv/{tmdb_id}/credits?api_key={TMDB_API_KEY}"
+            cast_response = requests.get(cast_url, timeout=10)
+            cast_data = []
+            
+            if cast_response.status_code == 200:
+                cast_info = cast_response.json().get('cast', [])[:10]  # Limit to 10 main cast
+                for person in cast_info:
+                    cast_data.append({
+                        'name': person.get('name', ''),
+                        'character': person.get('character', ''),
+                        'image': f"{TMDB_IMAGE_BASE_URL}{person.get('profile_path')}" if person.get('profile_path') else None
+                    })
+            
             return {
                 'title': data.get('name', ''),
                 'description': data.get('overview', ''),
-                'poster_url': f"{TMDB_IMAGE_BASE_URL}{data.get('poster_path', '')}" if data.get('poster_path') else '',
+                'thumbnail': f"{TMDB_IMAGE_BASE_URL}{data.get('poster_path')}" if data.get('poster_path') else '',
                 'release_date': data.get('first_air_date', ''),
-                'language': data.get('original_language', '')
+                'language': data.get('original_language', ''),
+                'rating': round(data.get('vote_average', 0), 1),
+                'cast': cast_data
             }
         else:
-            print(f"❌ Failed to fetch TV series: {response.status_code}")
+            print(f"TMDB API error: {response.status_code}")
+            return None
     except Exception as e:
-        print(f"❌ Error fetching TV details: {e}")
-    return None
+        print(f"Error fetching TMDB TV: {e}")
+        return None
 
-# Routes with comprehensive error handling
+# Routes
 @app.route('/')
 def index():
     try:
@@ -200,16 +213,15 @@ def index():
         print(f"Error in index route: {e}")
         return make_cors_response({
             'status': 'success',
-            'message': 'Zero Creations Media Database is running',
-            'version': '2.1 - CORS + Duplicates Enabled',
+            'message': 'Media Database Flask Application',
+            'version': '3.0 - Single Media Table with JSONB',
             'cors_enabled': True,
-            'duplicates_allowed': True,
             'endpoints': {
                 'admin_panel': '/admin',
                 'public_api': '/media',
-                'search': '/search?q=query',
+                'search': '/media?q=query',
                 'health': '/health',
-                'stats': '/api/stats'
+                'api_docs': '/api/docs'
             }
         })
 
@@ -217,18 +229,17 @@ def index():
 @auth_required
 def admin_panel():
     try:
-        return render_template('admin_all_in_one.html')
+        return render_template('admin.html')
     except Exception as e:
         print(f"Error in admin route: {e}")
         return make_cors_response({'error': 'Could not load admin panel', 'details': str(e)}, 500)
 
-# TMDB API Routes
+# TMDB Proxy Routes
 @app.route('/api/tmdb/movie/<int:tmdb_id>')
 @auth_required
 def get_tmdb_movie(tmdb_id):
     try:
-        print(f"🔍 Loading movie data for TMDB ID: {tmdb_id}...")
-        details = fetch_movie_details(tmdb_id)
+        details = fetch_tmdb_movie(tmdb_id)
         if details:
             return make_cors_response({
                 'status': 'success',
@@ -243,15 +254,14 @@ def get_tmdb_movie(tmdb_id):
         print(f"Error in TMDB movie API: {e}")
         return make_cors_response({
             'status': 'error',
-            'message': 'Failed to load movie details. Please check TMDB ID and try again.'
+            'message': 'Failed to load movie details'
         }, 500)
 
 @app.route('/api/tmdb/tv/<int:tmdb_id>')
 @auth_required
 def get_tmdb_tv(tmdb_id):
     try:
-        print(f"🔍 Loading TV series data for TMDB ID: {tmdb_id}...")
-        details = fetch_tv_details(tmdb_id)
+        details = fetch_tmdb_tv(tmdb_id)
         if details:
             return make_cors_response({
                 'status': 'success',
@@ -266,521 +276,431 @@ def get_tmdb_tv(tmdb_id):
         print(f"Error in TMDB TV API: {e}")
         return make_cors_response({
             'status': 'error',
-            'message': 'Failed to load TV series details. Please check TMDB ID and try again.'
+            'message': 'Failed to load TV series details'
         }, 500)
 
-# Admin API Routes - UPDATED: Allow duplicate TMDB IDs
-@app.route('/api/admin/movies', methods=['POST'])
+# Admin API Routes
+@app.route('/admin/media', methods=['POST'])
 @auth_required
-def add_movie():
+def create_media():
     try:
         data = request.get_json()
         if not data:
             return make_cors_response({'error': 'No data provided'}), 400
 
-        # REMOVED: Duplicate check - now allows same TMDB ID multiple times
-        print(f"➕ Adding movie: {data.get('title', 'Unknown')} (TMDB ID: {data.get('tmdb_id')})")
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
         
-        movie = Movie(
-            tmdb_id=data['tmdb_id'],
-            title=data['title'],
-            description=data.get('description', ''),
-            poster_url=data.get('poster_url', ''),
-            release_date=data.get('release_date', ''),
-            language=data.get('language', ''),
-            video_720p=data['video_720p'],
-            video_1080p=data['video_1080p']
-        )
+        # Insert into single media table
+        cursor.execute('''
+            INSERT INTO media (type, tmdb_id, title, description, thumbnail, release_date, 
+                             language, rating, cast, video_links, download_links, seasons)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (
+            data['type'],
+            data.get('tmdb_id'),
+            data['title'],
+            data.get('description', ''),
+            data.get('thumbnail', ''),
+            data.get('release_date', ''),
+            data.get('language', ''),
+            data.get('rating'),
+            json.dumps(data.get('cast', [])),
+            json.dumps(data.get('video_links', {})),
+            json.dumps(data.get('download_links', {})),
+            json.dumps(data.get('seasons', {}))
+        ))
         
-        db.session.add(movie)
-        db.session.commit()
-        
-        # Count total copies of this movie
-        movie_count = Movie.query.filter_by(tmdb_id=data['tmdb_id']).count()
-        
-        print(f"✅ Movie added successfully! This is copy #{movie_count}")
+        media_id = cursor.fetchone()['id']
+        conn.commit()
+        cursor.close()
+        conn.close()
         
         return make_cors_response({
             'status': 'success',
-            'message': f'Movie "{data["title"]}" added successfully',
-            'id': movie.id,
-            'duplicate_count': movie_count,
-            'note': f'This is copy #{movie_count} of this movie'
+            'message': f'{data["type"].title()} "{data["title"]}" added successfully',
+            'id': media_id
         })
     except Exception as e:
-        print(f"❌ Error adding movie: {e}")
-        db.session.rollback()
+        print(f"Error adding media: {e}")
+        if conn:
+            conn.rollback()
+            conn.close()
         return make_cors_response({
             'status': 'error',
-            'message': 'Failed to add movie. Please check all required fields.'
+            'message': 'Failed to add media'
         }, 500)
 
-@app.route('/api/admin/movies/<int:movie_id>', methods=['PUT'])
+@app.route('/admin/media/<int:media_id>', methods=['PUT'])
 @auth_required
-def edit_movie(movie_id):
-    try:
-        print(f"✏️ Updating movie ID: {movie_id}")
-        movie = Movie.query.get_or_404(movie_id)
-        data = request.get_json()
-        
-        movie.title = data.get('title', movie.title)
-        movie.description = data.get('description', movie.description)
-        movie.poster_url = data.get('poster_url', movie.poster_url)
-        movie.release_date = data.get('release_date', movie.release_date)
-        movie.language = data.get('language', movie.language)
-        movie.video_720p = data.get('video_720p', movie.video_720p)
-        movie.video_1080p = data.get('video_1080p', movie.video_1080p)
-        
-        db.session.commit()
-        print(f"✅ Movie updated successfully: {movie.title}")
-        
-        return make_cors_response({
-            'status': 'success',
-            'message': f'Movie "{movie.title}" updated successfully'
-        })
-    except Exception as e:
-        print(f"❌ Error updating movie: {e}")
-        db.session.rollback()
-        return make_cors_response({
-            'status': 'error',
-            'message': 'Failed to update movie'
-        }, 500)
-
-@app.route('/api/admin/movies/<int:movie_id>', methods=['DELETE'])
-@auth_required
-def delete_movie(movie_id):
-    try:
-        movie = Movie.query.get_or_404(movie_id)
-        tmdb_id = movie.tmdb_id
-        title = movie.title
-        
-        db.session.delete(movie)
-        db.session.commit()
-        
-        remaining_copies = Movie.query.filter_by(tmdb_id=tmdb_id).count()
-        print(f"🗑️ Movie deleted: {title}. Remaining copies: {remaining_copies}")
-        
-        return make_cors_response({
-            'status': 'success',
-            'message': f'Movie "{title}" deleted successfully',
-            'remaining_copies': remaining_copies
-        })
-    except Exception as e:
-        print(f"❌ Error deleting movie: {e}")
-        db.session.rollback()
-        return make_cors_response({
-            'status': 'error',
-            'message': 'Failed to delete movie'
-        }, 500)
-
-@app.route('/api/admin/tv-series', methods=['POST'])
-@auth_required
-def add_tv_series():
+def update_media(media_id):
     try:
         data = request.get_json()
-        if not data:
-            return make_cors_response({'error': 'No data provided'}), 400
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
 
-        # REMOVED: Duplicate check - now allows same TMDB ID multiple times
-        print(f"➕ Adding TV series: {data.get('title', 'Unknown')} (TMDB ID: {data.get('tmdb_id')})")
+        cursor = conn.cursor()
         
-        tv_series = TVSeries(
-            tmdb_id=data['tmdb_id'],
-            title=data['title'],
-            description=data.get('description', ''),
-            poster_url=data.get('poster_url', ''),
-            release_date=data.get('release_date', ''),
-            language=data.get('language', '')
-        )
+        # Update media record
+        cursor.execute('''
+            UPDATE media SET 
+                title = %s, description = %s, thumbnail = %s, release_date = %s,
+                language = %s, rating = %s, cast = %s, video_links = %s, 
+                download_links = %s, seasons = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            RETURNING title
+        ''', (
+            data.get('title'),
+            data.get('description', ''),
+            data.get('thumbnail', ''),
+            data.get('release_date', ''),
+            data.get('language', ''),
+            data.get('rating'),
+            json.dumps(data.get('cast', [])),
+            json.dumps(data.get('video_links', {})),
+            json.dumps(data.get('download_links', {})),
+            json.dumps(data.get('seasons', {})),
+            media_id
+        ))
         
-        db.session.add(tv_series)
-        db.session.commit()
+        result = cursor.fetchone()
+        if not result:
+            cursor.close()
+            conn.close()
+            return make_cors_response({'error': 'Media not found'}), 404
         
-        # Count total copies of this TV series
-        tv_count = TVSeries.query.filter_by(tmdb_id=data['tmdb_id']).count()
-        
-        print(f"✅ TV series added successfully! This is copy #{tv_count}")
+        conn.commit()
+        cursor.close()
+        conn.close()
         
         return make_cors_response({
             'status': 'success',
-            'message': f'TV series "{data["title"]}" added successfully',
-            'id': tv_series.id,
-            'duplicate_count': tv_count,
-            'note': f'This is copy #{tv_count} of this TV series'
+            'message': f'Media "{result["title"]}" updated successfully'
         })
     except Exception as e:
-        print(f"❌ Error adding TV series: {e}")
-        db.session.rollback()
+        print(f"Error updating media: {e}")
+        if conn:
+            conn.rollback()
+            conn.close()
         return make_cors_response({
             'status': 'error',
-            'message': 'Failed to add TV series. Please check all required fields.'
+            'message': 'Failed to update media'
         }, 500)
 
-@app.route('/api/admin/tv-series/<int:tv_id>', methods=['PUT'])
+@app.route('/admin/media/<int:media_id>', methods=['DELETE'])
 @auth_required
-def edit_tv_series(tv_id):
+def delete_media(media_id):
     try:
-        print(f"✏️ Updating TV series ID: {tv_id}")
-        tv_series = TVSeries.query.get_or_404(tv_id)
-        data = request.get_json()
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
         
-        tv_series.title = data.get('title', tv_series.title)
-        tv_series.description = data.get('description', tv_series.description)
-        tv_series.poster_url = data.get('poster_url', tv_series.poster_url)
-        tv_series.release_date = data.get('release_date', tv_series.release_date)
-        tv_series.language = data.get('language', tv_series.language)
+        # Get media details before deletion
+        cursor.execute('SELECT title, type FROM media WHERE id = %s', (media_id,))
+        media = cursor.fetchone()
         
-        db.session.commit()
-        print(f"✅ TV series updated successfully: {tv_series.title}")
+        if not media:
+            cursor.close()
+            conn.close()
+            return make_cors_response({'error': 'Media not found'}), 404
+        
+        # Delete media
+        cursor.execute('DELETE FROM media WHERE id = %s', (media_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
         
         return make_cors_response({
             'status': 'success',
-            'message': f'TV series "{tv_series.title}" updated successfully'
+            'message': f'{media["type"].title()} "{media["title"]}" deleted successfully'
         })
     except Exception as e:
-        print(f"❌ Error updating TV series: {e}")
-        db.session.rollback()
+        print(f"Error deleting media: {e}")
+        if conn:
+            conn.rollback()
+            conn.close()
         return make_cors_response({
             'status': 'error',
-            'message': 'Failed to update TV series'
+            'message': 'Failed to delete media'
         }, 500)
 
-@app.route('/api/admin/tv-series/<int:tv_id>', methods=['DELETE'])
+@app.route('/admin/media/<int:media_id>/episodes', methods=['POST'])
 @auth_required
-def delete_tv_series(tv_id):
-    try:
-        tv_series = TVSeries.query.get_or_404(tv_id)
-        tmdb_id = tv_series.tmdb_id
-        title = tv_series.title
-        
-        db.session.delete(tv_series)
-        db.session.commit()
-        
-        remaining_copies = TVSeries.query.filter_by(tmdb_id=tmdb_id).count()
-        print(f"🗑️ TV series deleted: {title}. Remaining copies: {remaining_copies}")
-        
-        return make_cors_response({
-            'status': 'success',
-            'message': f'TV series "{title}" deleted successfully',
-            'remaining_copies': remaining_copies
-        })
-    except Exception as e:
-        print(f"❌ Error deleting TV series: {e}")
-        db.session.rollback()
-        return make_cors_response({
-            'status': 'error',
-            'message': 'Failed to delete TV series'
-        }, 500)
-
-@app.route('/api/admin/tv-series/<int:tv_id>/episodes', methods=['POST'])
-@auth_required
-def add_episode(tv_id):
+def add_episode(media_id):
     try:
         data = request.get_json()
-        tv_series = TVSeries.query.get_or_404(tv_id)
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
         
-        print(f"➕ Adding episode S{data['season_number']}E{data['episode_number']} to {tv_series.title}")
+        # Get current seasons data
+        cursor.execute('SELECT seasons, title FROM media WHERE id = %s AND type = %s', (media_id, 'tv'))
+        result = cursor.fetchone()
         
-        season = Season.query.filter_by(
-            tv_series_id=tv_id, 
-            season_number=data['season_number']
-        ).first()
+        if not result:
+            cursor.close()
+            conn.close()
+            return make_cors_response({'error': 'TV series not found'}), 404
         
-        if not season:
-            season = Season(
-                tv_series_id=tv_id,
-                season_number=data['season_number']
-            )
-            db.session.add(season)
-            db.session.commit()
+        seasons = result['seasons'] or {}
+        season_key = f"season_{data['season_number']}"
         
-        existing_episode = Episode.query.filter_by(
-            season_id=season.id,
-            episode_number=data['episode_number']
-        ).first()
+        # Initialize season if it doesn't exist
+        if season_key not in seasons:
+            seasons[season_key] = {
+                'season_number': data['season_number'],
+                'total_episodes': 0,
+                'episodes': []
+            }
         
-        if existing_episode:
+        # Check if episode already exists
+        existing_episodes = [ep for ep in seasons[season_key]['episodes'] if ep['episode_number'] == data['episode_number']]
+        if existing_episodes:
+            cursor.close()
+            conn.close()
             return make_cors_response({
                 'status': 'error',
                 'message': f'Episode S{data["season_number"]}E{data["episode_number"]} already exists'
             }, 400)
         
-        episode = Episode(
-            season_id=season.id,
-            episode_number=data['episode_number'],
-            video_720p=data['video_720p']
-        )
+        # Add new episode
+        new_episode = {
+            'episode_number': data['episode_number'],
+            'episode_name': data.get('episode_name', f'Episode {data["episode_number"]}'),
+            'video_720p': data.get('video_720p', ''),
+            'download_720p': {
+                'url': data.get('download_720p', ''),
+                'file_type': data.get('file_type', 'webrip')
+            }
+        }
         
-        db.session.add(episode)
-        db.session.commit()
+        seasons[season_key]['episodes'].append(new_episode)
+        seasons[season_key]['total_episodes'] = len(seasons[season_key]['episodes'])
         
-        print(f"✅ Episode added successfully!")
+        # Update database
+        cursor.execute('''
+            UPDATE media SET seasons = %s, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = %s
+        ''', (json.dumps(seasons), media_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
         
         return make_cors_response({
             'status': 'success',
             'message': f'Episode S{data["season_number"]}E{data["episode_number"]} added successfully'
         })
     except Exception as e:
-        print(f"❌ Error adding episode: {e}")
-        db.session.rollback()
+        print(f"Error adding episode: {e}")
+        if conn:
+            conn.rollback()
+            conn.close()
         return make_cors_response({
             'status': 'error',
             'message': 'Failed to add episode'
         }, 500)
 
-# Public API Routes - Enhanced with all video links
+# Public API Routes
 @app.route('/media')
 def get_all_media():
     try:
-        print("📋 Loading all media...")
-        movies = Movie.query.all()
-        tv_series = TVSeries.query.all()
+        # Get search parameters
+        search_query = request.args.get('q', '').strip()
+        media_type = request.args.get('type', '').strip()
         
-        media_list = []
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
         
-        for movie in movies:
-            media_list.append({
-                'id': movie.id,
-                'type': 'movie',
-                'title': movie.title,
-                'description': movie.description,
-                'poster_url': movie.poster_url,
-                'release_date': movie.release_date,
-                'language': movie.language,
-                'tmdb_id': movie.tmdb_id,
-                'video_links': {
-                    '720p': movie.video_720p,
-                    '1080p': movie.video_1080p
-                },
-                'created_at': movie.created_at.isoformat() if movie.created_at else None
-            })
+        # Build query with filters
+        query = 'SELECT * FROM media WHERE 1=1'
+        params = []
         
-        for tv in tv_series:
-            # Collect all episodes with their video links
-            all_episodes = {}
-            for season in tv.seasons:
-                season_key = f"season_{season.season_number}"
-                episodes_list = []
-                
-                for episode in season.episodes:
-                    episodes_list.append({
-                        'episode_number': episode.episode_number,
-                        'video_720p': episode.video_720p
-                    })
-                
-                all_episodes[season_key] = {
-                    'season_number': season.season_number,
-                    'total_episodes': len(episodes_list),
-                    'episodes': episodes_list
-                }
+        if media_type and media_type in ['movie', 'tv']:
+            query += ' AND type = %s'
+            params.append(media_type)
+        
+        if search_query:
+            query += ' AND (title ILIKE %s OR description ILIKE %s)'
+            params.extend([f'%{search_query}%', f'%{search_query}%'])
+        
+        query += ' ORDER BY created_at DESC'
+        
+        cursor.execute(query, params)
+        media_list = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Format response data
+        formatted_media = []
+        for media in media_list:
+            media_data = {
+                'id': media['id'],
+                'type': media['type'],
+                'title': media['title'],
+                'description': media['description'],
+                'thumbnail': media['thumbnail'],
+                'release_date': media['release_date'],
+                'language': media['language'],
+                'rating': float(media['rating']) if media['rating'] else None,
+                'cast': media['cast'] or [],
+                'created_at': media['created_at'].isoformat() if media['created_at'] else None
+            }
             
-            media_list.append({
-                'id': tv.id,
-                'type': 'tv',
-                'title': tv.title,
-                'description': tv.description,
-                'poster_url': tv.poster_url,
-                'release_date': tv.release_date,
-                'language': tv.language,
-                'total_seasons': len(tv.seasons),
-                'tmdb_id': tv.tmdb_id,
-                'seasons': all_episodes,
-                'created_at': tv.created_at.isoformat() if tv.created_at else None
-            })
-        
-        print(f"✅ Loaded {len(media_list)} media items")
+            if media['type'] == 'movie':
+                media_data['video_links'] = media['video_links'] or {}
+                media_data['download_links'] = media['download_links'] or {}
+            else:  # TV series
+                media_data['seasons'] = media['seasons'] or {}
+                # Calculate total seasons
+                seasons_data = media['seasons'] or {}
+                media_data['total_seasons'] = len(seasons_data)
+            
+            formatted_media.append(media_data)
         
         return make_cors_response({
             'status': 'success',
-            'total_count': len(media_list),
-            'movies_count': len([m for m in media_list if m['type'] == 'movie']),
-            'tv_series_count': len([m for m in media_list if m['type'] == 'tv']),
-            'data': media_list
+            'total_count': len(formatted_media),
+            'data': formatted_media
         })
     except Exception as e:
-        print(f"❌ Error loading media: {e}")
+        print(f"Error loading media: {e}")
         return make_cors_response({'error': 'Failed to retrieve media'}), 500
 
 @app.route('/media/<int:media_id>')
 def get_media_details(media_id):
     try:
-        print(f"🔍 Loading details for media ID: {media_id}")
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM media WHERE id = %s', (media_id,))
+        media = cursor.fetchone()
+        cursor.close()
+        conn.close()
         
-        # Try movie first
-        movie = Movie.query.get(media_id)
-        if movie:
-            movie_data = {
-                'id': movie.id,
-                'type': 'movie',
-                'title': movie.title,
-                'description': movie.description,
-                'poster_url': movie.poster_url,
-                'release_date': movie.release_date,
-                'language': movie.language,
-                'tmdb_id': movie.tmdb_id,
-                'video_links': {
-                    '720p': movie.video_720p,
-                    '1080p': movie.video_1080p
-                },
-                'created_at': movie.created_at.isoformat() if movie.created_at else None
-            }
-            return make_cors_response({
-                'status': 'success',
-                'data': movie_data
-            })
+        if not media:
+            return make_cors_response({'error': 'Media not found'}), 404
         
-        # Try TV series
-        tv_series = TVSeries.query.get(media_id)
-        if tv_series:
-            seasons_data = {}
-            
-            for season in tv_series.seasons:
-                season_key = f"season_{season.season_number}"
-                episodes_list = []
-                
-                for episode in season.episodes:
-                    episodes_list.append({
-                        'episode_number': episode.episode_number,
-                        'video_720p': episode.video_720p
-                    })
-                
-                seasons_data[season_key] = {
-                    'season_number': season.season_number,
-                    'total_episodes': len(episodes_list),
-                    'episodes': episodes_list
-                }
-            
-            tv_data = {
-                'id': tv_series.id,
-                'type': 'tv',
-                'title': tv_series.title,
-                'description': tv_series.description,
-                'poster_url': tv_series.poster_url,
-                'release_date': tv_series.release_date,
-                'language': tv_series.language,
-                'total_seasons': len(tv_series.seasons),
-                'tmdb_id': tv_series.tmdb_id,
-                'seasons': seasons_data,
-                'created_at': tv_series.created_at.isoformat() if tv_series.created_at else None
-            }
-            
-            return make_cors_response({
-                'status': 'success',
-                'data': tv_data
-            })
+        # Format response based on media type
+        media_data = {
+            'id': media['id'],
+            'type': media['type'],
+            'title': media['title'],
+            'description': media['description'],
+            'thumbnail': media['thumbnail'],
+            'release_date': media['release_date'],
+            'language': media['language'],
+            'rating': float(media['rating']) if media['rating'] else None,
+            'cast': media['cast'] or [],
+            'created_at': media['created_at'].isoformat() if media['created_at'] else None
+        }
         
-        return make_cors_response({'error': 'Media not found'}), 404
+        if media['type'] == 'movie':
+            media_data['video_links'] = media['video_links'] or {}
+            media_data['download_links'] = media['download_links'] or {}
+        else:  # TV series
+            media_data['seasons'] = media['seasons'] or {}
+            seasons_data = media['seasons'] or {}
+            media_data['total_seasons'] = len(seasons_data)
+        
+        return make_cors_response({
+            'status': 'success',
+            'data': media_data
+        })
     except Exception as e:
-        print(f"❌ Error loading media details: {e}")
+        print(f"Error loading media details: {e}")
         return make_cors_response({'error': 'Failed to retrieve media details'}), 500
 
-@app.route('/search')
-def search_media():
+@app.route('/admin/search')
+@auth_required
+def admin_search():
     try:
         query = request.args.get('q', '').strip()
+        search_type = request.args.get('type', 'all')  # all, id, title
+        
         if not query:
             return make_cors_response({'error': 'Search query is required'}), 400
         
-        print(f"🔍 Searching for: '{query}'")
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
         
-        movies = Movie.query.filter(
-            db.or_(
-                Movie.title.contains(query),
-                Movie.description.contains(query),
-                Movie.language.contains(query)
-            )
-        ).all()
+        if search_type == 'id':
+            # Search by ID (media ID or TMDB ID)
+            if query.isdigit():
+                cursor.execute('''
+                    SELECT * FROM media 
+                    WHERE id = %s OR tmdb_id = %s 
+                    ORDER BY created_at DESC
+                ''', (int(query), int(query)))
+            else:
+                return make_cors_response({'error': 'ID search requires numeric input'}), 400
+        else:
+            # Search by title and description
+            cursor.execute('''
+                SELECT * FROM media 
+                WHERE title ILIKE %s OR description ILIKE %s 
+                ORDER BY created_at DESC
+            ''', (f'%{query}%', f'%{query}%'))
         
-        tv_series = TVSeries.query.filter(
-            db.or_(
-                TVSeries.title.contains(query),
-                TVSeries.description.contains(query),
-                TVSeries.language.contains(query)
-            )
-        ).all()
-        
-        results = []
-        
-        for movie in movies:
-            results.append({
-                'id': movie.id,
-                'type': 'movie',
-                'title': movie.title,
-                'description': movie.description,
-                'poster_url': movie.poster_url,
-                'release_date': movie.release_date,
-                'language': movie.language,
-                'tmdb_id': movie.tmdb_id,
-                'video_links': {
-                    '720p': movie.video_720p,
-                    '1080p': movie.video_1080p
-                },
-                'created_at': movie.created_at.isoformat() if movie.created_at else None
-            })
-        
-        for tv in tv_series:
-            # Collect all episodes with their video links
-            all_episodes = {}
-            for season in tv.seasons:
-                season_key = f"season_{season.season_number}"
-                episodes_list = []
-                
-                for episode in season.episodes:
-                    episodes_list.append({
-                        'episode_number': episode.episode_number,
-                        'video_720p': episode.video_720p
-                    })
-                
-                all_episodes[season_key] = {
-                    'season_number': season.season_number,
-                    'total_episodes': len(episodes_list),
-                    'episodes': episodes_list
-                }
-            
-            results.append({
-                'id': tv.id,
-                'type': 'tv',
-                'title': tv.title,
-                'description': tv.description,
-                'poster_url': tv.poster_url,
-                'release_date': tv.release_date,
-                'language': tv.language,
-                'total_seasons': len(tv.seasons),
-                'tmdb_id': tv.tmdb_id,
-                'seasons': all_episodes,
-                'created_at': tv.created_at.isoformat() if tv.created_at else None
-            })
-        
-        print(f"✅ Found {len(results)} results for '{query}'")
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
         
         return make_cors_response({
             'status': 'success',
             'query': query,
+            'search_type': search_type,
             'total_results': len(results),
-            'movies_count': len([r for r in results if r['type'] == 'movie']),
-            'tv_series_count': len([r for r in results if r['type'] == 'tv']),
-            'results': results
+            'results': [dict(row) for row in results]
         })
     except Exception as e:
-        print(f"❌ Error in search: {e}")
+        print(f"Error in admin search: {e}")
         return make_cors_response({'error': 'Search failed'}), 500
 
 @app.route('/health')
 def health_check():
     try:
-        db.session.execute(db.text('SELECT 1'))
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({
+                'status': 'unhealthy',
+                'database': 'disconnected',
+                'timestamp': datetime.utcnow().isoformat()
+            }, 500)
+        
+        cursor = conn.cursor()
+        cursor.execute('SELECT 1')
+        cursor.close()
+        conn.close()
+        
         return make_cors_response({
             'status': 'healthy',
             'database': 'connected',
             'cors_enabled': True,
-            'duplicates_allowed': True,
             'timestamp': datetime.utcnow().isoformat(),
-            'version': '2.1 - CORS + Duplicates Enabled'
+            'version': '3.0 - Single Media Table with JSONB'
         })
     except Exception as e:
         return make_cors_response({
             'status': 'unhealthy',
-            'database': 'disconnected',
+            'database': 'error',
             'error': str(e),
             'timestamp': datetime.utcnow().isoformat()
         }, 500)
@@ -788,36 +708,51 @@ def health_check():
 @app.route('/api/stats')
 def get_stats():
     try:
-        movies_count = Movie.query.count()
-        tv_series_count = TVSeries.query.count()
-        episodes_count = Episode.query.count()
+        conn = get_db_connection()
+        if not conn:
+            return make_cors_response({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor()
         
-        # Get duplicate statistics
-        movie_duplicates = db.session.query(Movie.tmdb_id, db.func.count(Movie.tmdb_id)).group_by(Movie.tmdb_id).having(db.func.count(Movie.tmdb_id) > 1).all()
-        tv_duplicates = db.session.query(TVSeries.tmdb_id, db.func.count(TVSeries.tmdb_id)).group_by(TVSeries.tmdb_id).having(db.func.count(TVSeries.tmdb_id) > 1).all()
+        # Get counts by type
+        cursor.execute("SELECT type, COUNT(*) as count FROM media GROUP BY type")
+        type_counts = cursor.fetchall()
         
+        # Get total count
+        cursor.execute("SELECT COUNT(*) as total FROM media")
+        total_count = cursor.fetchone()['total']
+        
+        # Get episode count (from seasons JSONB)
+        cursor.execute('''
+            SELECT SUM(
+                (SELECT SUM((season_data->>'total_episodes')::int)
+                 FROM jsonb_each(seasons) AS season_data
+                 WHERE season_data IS NOT NULL)
+            ) as total_episodes
+            FROM media 
+            WHERE type = 'tv' AND seasons IS NOT NULL
+        ''')
+        episodes_result = cursor.fetchone()
+        total_episodes = episodes_result['total_episodes'] or 0
+        
+        cursor.close()
+        conn.close()
+        
+        # Format statistics
         stats = {
             'status': 'success',
-            'total_movies': movies_count,
-            'total_tv_series': tv_series_count,
-            'total_episodes': episodes_count,
-            'total_media': movies_count + tv_series_count,
-            'duplicate_statistics': {
-                'movies_with_duplicates': len(movie_duplicates),
-                'tv_series_with_duplicates': len(tv_duplicates),
-                'total_duplicate_entries': sum([count for _, count in movie_duplicates]) + sum([count for _, count in tv_duplicates])
-            },
-            'database_name': 'Zero Creations Media Database',
+            'total_media': total_count,
+            'total_episodes': total_episodes,
+            'by_type': {row['type']: row['count'] for row in type_counts},
             'database_type': 'PostgreSQL (Neon)',
-            'version': '2.1 - CORS + Duplicates Enabled',
+            'version': '3.0 - Single Media Table with JSONB',
             'cors_enabled': True,
-            'duplicates_allowed': True,
             'timestamp': datetime.utcnow().isoformat()
         }
         
         return make_cors_response(stats)
     except Exception as e:
-        print(f"❌ Error getting stats: {e}")
+        print(f"Error getting stats: {e}")
         return make_cors_response({'error': 'Failed to get stats'}), 500
 
 @app.route('/api/docs')
@@ -827,177 +762,58 @@ def api_docs():
     except Exception as e:
         print(f"Error loading API docs: {e}")
         return make_cors_response({
-            'message': 'Zero Creations Media Database API Documentation',
-            'version': '2.1 - CORS + Duplicates Enabled',
+            'message': 'Media Database API Documentation',
+            'version': '3.0 - Single Media Table with JSONB',
             'cors_enabled': True,
-            'duplicates_allowed': True,
             'public_endpoints': {
                 'get_all_media': {
                     'url': '/media',
                     'method': 'GET',
-                    'description': 'Get all media with video links (includes duplicates)',
-                    'cors': True
+                    'description': 'Get all media',
+                    'query_params': ['q (search)', 'type (movie|tv)']
                 },
                 'get_media_detail': {
                     'url': '/media/<id>',
                     'method': 'GET',
-                    'description': 'Get specific media with all episodes',
-                    'cors': True
-                },
-                'search_media': {
-                    'url': '/search?q=<query>',
-                    'method': 'GET',
-                    'description': 'Search media with video links (includes duplicates)',
-                    'cors': True
+                    'description': 'Get specific media with full details'
                 },
                 'health_check': {
                     'url': '/health',
                     'method': 'GET',
-                    'description': 'API health check',
-                    'cors': True
+                    'description': 'API health check'
                 },
                 'get_stats': {
                     'url': '/api/stats',
                     'method': 'GET',
-                    'description': 'Get database statistics including duplicate counts',
-                    'cors': True
+                    'description': 'Get database statistics'
                 }
             },
             'admin_endpoints': {
-                'admin_panel': {
-                    'url': '/admin',
-                    'method': 'GET',
-                    'description': 'Admin panel (requires auth: venura/venura)',
-                    'auth': 'Basic Auth',
-                    'cors': True
-                },
-                'add_movie': {
-                    'url': '/api/admin/movies',
-                    'method': 'POST',
-                    'description': 'Add movie (duplicates allowed)',
-                    'note': 'Same TMDB ID can be added multiple times',
-                    'cors': True
-                },
-                'add_tv_series': {
-                    'url': '/api/admin/tv-series',
-                    'method': 'POST',
-                    'description': 'Add TV series (duplicates allowed)',
-                    'note': 'Same TMDB ID can be added multiple times',
-                    'cors': True
-                }
+                'admin_panel': '/admin',
+                'tmdb_movie_proxy': '/api/tmdb/movie/<tmdb_id>',
+                'tmdb_tv_proxy': '/api/tmdb/tv/<tmdb_id>',
+                'create_media': 'POST /admin/media',
+                'update_media': 'PUT /admin/media/<id>',
+                'delete_media': 'DELETE /admin/media/<id>',
+                'add_episode': 'POST /admin/media/<id>/episodes',
+                'admin_search': '/admin/search?q=<query>&type=<all|id|title>'
             },
-            'features': [
-                'Full CORS support for websites and mobile apps',
-                'RESTful API design',
-                'JSON responses with proper status codes',
-                'Search functionality',
+            'authentication': {
+                'type': 'Basic Auth',
+                'username': 'Venera',
+                'password': 'Venera'
+            },
+                            'features': [
+                'Single media table with JSONB fields',
+                'Full CORS support',
+                'TMDB integration with cast data',
+                'Flexible episode management',
+                'Search by title and description',
+                'Pretty-printed JSON responses',
                 'Admin authentication',
-                'TMDB integration with better error messages',
-                'PostgreSQL/SQLite support',
-                'DUPLICATE ENTRIES ALLOWED - Same TMDB ID can be added multiple times',
-                'Duplicate tracking and statistics',
-                'Better loading messages and error handling'
-            ],
-            'cors_settings': {
-                'origins': '*',
-                'methods': ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-                'headers': ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-                'preflight': 'Supported'
-            }
+                'Health monitoring'
+            ]
         })
-
-# New route to get duplicates by TMDB ID
-@app.route('/api/duplicates/movie/<int:tmdb_id>')
-def get_movie_duplicates(tmdb_id):
-    try:
-        movies = Movie.query.filter_by(tmdb_id=tmdb_id).all()
-        
-        if not movies:
-            return make_cors_response({
-                'status': 'error',
-                'message': f'No movies found with TMDB ID {tmdb_id}'
-            }, 404)
-        
-        movie_list = []
-        for movie in movies:
-            movie_list.append({
-                'id': movie.id,
-                'tmdb_id': movie.tmdb_id,
-                'title': movie.title,
-                'description': movie.description,
-                'poster_url': movie.poster_url,
-                'release_date': movie.release_date,
-                'language': movie.language,
-                'video_links': {
-                    '720p': movie.video_720p,
-                    '1080p': movie.video_1080p
-                },
-                'created_at': movie.created_at.isoformat() if movie.created_at else None
-            })
-        
-        return make_cors_response({
-            'status': 'success',
-            'tmdb_id': tmdb_id,
-            'total_copies': len(movie_list),
-            'movies': movie_list
-        })
-    except Exception as e:
-        print(f"❌ Error getting movie duplicates: {e}")
-        return make_cors_response({'error': 'Failed to get movie duplicates'}), 500
-
-@app.route('/api/duplicates/tv/<int:tmdb_id>')
-def get_tv_duplicates(tmdb_id):
-    try:
-        tv_series_list = TVSeries.query.filter_by(tmdb_id=tmdb_id).all()
-        
-        if not tv_series_list:
-            return make_cors_response({
-                'status': 'error',
-                'message': f'No TV series found with TMDB ID {tmdb_id}'
-            }, 404)
-        
-        series_list = []
-        for tv in tv_series_list:
-            # Collect all episodes with their video links
-            all_episodes = {}
-            for season in tv.seasons:
-                season_key = f"season_{season.season_number}"
-                episodes_list = []
-                
-                for episode in season.episodes:
-                    episodes_list.append({
-                        'episode_number': episode.episode_number,
-                        'video_720p': episode.video_720p
-                    })
-                
-                all_episodes[season_key] = {
-                    'season_number': season.season_number,
-                    'total_episodes': len(episodes_list),
-                    'episodes': episodes_list
-                }
-            
-            series_list.append({
-                'id': tv.id,
-                'tmdb_id': tv.tmdb_id,
-                'title': tv.title,
-                'description': tv.description,
-                'poster_url': tv.poster_url,
-                'release_date': tv.release_date,
-                'language': tv.language,
-                'total_seasons': len(tv.seasons),
-                'seasons': all_episodes,
-                'created_at': tv.created_at.isoformat() if tv.created_at else None
-            })
-        
-        return make_cors_response({
-            'status': 'success',
-            'tmdb_id': tmdb_id,
-            'total_copies': len(series_list),
-            'tv_series': series_list
-        })
-    except Exception as e:
-        print(f"❌ Error getting TV duplicates: {e}")
-        return make_cors_response({'error': 'Failed to get TV duplicates'}), 500
 
 # Error handlers with CORS support
 @app.errorhandler(404)
